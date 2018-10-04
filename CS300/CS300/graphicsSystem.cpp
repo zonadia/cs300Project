@@ -5,6 +5,7 @@
 #include <wrl.h>
 
 #include "graphicsSystem.h"
+#include "shader.h"
 
 #pragma comment(lib,"d3d11.lib")
 
@@ -142,6 +143,7 @@ void initDirectX()
 
     DXData::DXcontext->RSSetViewports(1, &DXData::viewport);
     
+    loadShaders();
 }
 
 void graphicsMainLoop()
