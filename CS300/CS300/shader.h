@@ -4,6 +4,16 @@
 struct ID3D11VertexShader;
 struct ID3D11PixelShader;
 
+struct DefaultVertex
+{
+    //Position
+    float x, y, z;
+    //Normal
+    float nx, ny, nz;
+    //Color
+    float r, g, b;
+};
+
 //A combination of a vertex and pixel shader
 struct shaderProgram
 {

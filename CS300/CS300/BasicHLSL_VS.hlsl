@@ -1,10 +1,10 @@
 //--------------------------------------------------------------------------------------
 // Globals
 //--------------------------------------------------------------------------------------
-cbuffer cbPerObject : register( b0 )
-{
-    matrix g_ModelViewProjection;
-};
+//cbuffer cbPerObject : register( b0 )
+//{
+    //matrix g_ModelViewProjection;
+//};
 
 //--------------------------------------------------------------------------------------
 // Input / Output structures
@@ -18,8 +18,8 @@ struct VS_INPUT
 
 struct VS_OUTPUT
 {
-    float3 vNormal : NORMAL;
     float4 vPosition : SV_POSITION;
+    float3 vNormal : NORMAL;
     float4 vColor : COLOR;
 };
 
@@ -30,7 +30,8 @@ VS_OUTPUT VSMain( VS_INPUT Input )
 {
     VS_OUTPUT Output;
     
-    Output.vPosition = mul( float4(Input.vPosition, 1.0f), g_ModelViewProjection );
+    //Output.vPosition = mul( float4(Input.vPosition, 1.0f), g_ModelViewProjection );
+    Output.vPosition = float4(Input.vPosition, 1.0f);
     Output.vNormal = Input.vNormal;
     Output.vColor = float4(Input.vColor.xyz, 1.0f);
     

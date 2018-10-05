@@ -27,13 +27,38 @@ namespace DXData
 
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView> renderTargetView;
     Microsoft::WRL::ComPtr<ID3D11DepthStencilView> depthStencilView;
+    Microsoft::WRL::ComPtr<ID3D11RasterizerState> rasterizerState;
 
     D3D11_VIEWPORT viewport;
+
+    extern shaderProgram mainShaderProgram;
 }
 
 namespace WinData
 {
     extern HWND windowHandle;
+}
+
+void createRasterizerState()
+{
+    D3D11_RASTERIZER_DESC desc;
+    ZeroMemory(&desc, sizeof(desc));
+
+    desc.AntialiasedLineEnable = false;
+    desc.CullMode = D3D11_CULL_BACK;
+    desc.DepthBias = 0;
+    desc.DepthBiasClamp = 0.0f;
+    desc.DepthClipEnable = true;
+    desc.FillMode = D3D11_FILL_SOLID;
+    desc.FrontCounterClockwise = true; // RH Coordinate System
+    desc.MultisampleEnable = false;
+    desc.ScissorEnable = false;
+    desc.SlopeScaledDepthBias = 0.0f;
+
+    HRESULT hr = DXData::DXdevice->CreateRasterizerState(&desc, &DXData::rasterizerState);
+    if(FAILED(hr))std::cout << "Failed to create rasterizer state! " << GetLastError() << std::endl;
+
+    DXData::DXcontext->RSSetState(DXData::rasterizerState.Get());
 }
 
 void initDirectX()
@@ -120,19 +145,25 @@ void initDirectX()
         D3D11_BIND_DEPTH_STENCIL
     );
 
-    DXData::DXdevice->CreateTexture2D(
+    hr = DXData::DXdevice->CreateTexture2D(
         &depthStencilDesc,
         nullptr,
-        &DXData::depthStencil
-    );
-
+        &DXData::depthStencil);
+    if (FAILED(hr)) {
+        std::cout << GetLastError() << std::endl;
+        return;
+    }
     CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc(D3D11_DSV_DIMENSION_TEXTURE2D);
 
-    DXData::DXdevice->CreateDepthStencilView(
-        DXData::depthStencil,
-        &depthStencilViewDesc,
-        &DXData::depthStencilView
-    );
+    hr = DXData::DXdevice->CreateDepthStencilView(
+            DXData::depthStencil,
+            &depthStencilViewDesc,
+            &DXData::depthStencilView);
+    if (FAILED(hr)) {
+        std::cout << GetLastError() << std::endl;
+        return;
+    }
+    createRasterizerState();
 
     //Create a viewport
     ZeroMemory(&DXData::viewport, sizeof(D3D11_VIEWPORT));
@@ -144,6 +175,56 @@ void initDirectX()
     DXData::DXcontext->RSSetViewports(1, &DXData::viewport);
     
     loadShaders();
+}
+
+void renderTriangle()
+{
+    //Set shaders as active
+    DXData::DXcontext->VSSetShader(DXData::mainShaderProgram.vertexShader.Get(), 0, 0);
+    DXData::DXcontext->PSSetShader(DXData::mainShaderProgram.pixelShader.Get(), 0, 0);
+    //Also set the input layout
+    DXData::DXcontext->IASetInputLayout(DXData::mainShaderProgram.vsLayout);
+
+
+    //Set up vertex buffers
+    DefaultVertex TriVertices[] = {{0.0f, 0.5f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f, 0.0f}, 
+                                   { 0.45f, -0.5f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f },
+                                   { -0.45f, -0.5f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 1.0f }};
+
+    //Put buffer into mesh later
+    //Create buffer
+    ID3D11Buffer *vertBuffer;
+    D3D11_BUFFER_DESC bd;
+    ZeroMemory(&bd, sizeof(bd));
+    bd.Usage = D3D11_USAGE_DYNAMIC;
+    bd.ByteWidth = sizeof(DefaultVertex) * 3;
+    bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+    HRESULT hr = DXData::DXdevice->CreateBuffer(&bd, NULL, &vertBuffer);
+    if (FAILED(hr)) {
+        std::cout << GetLastError() << std::endl;
+        return;
+    }
+    //Fill the buffer
+    D3D11_MAPPED_SUBRESOURCE ms;
+    DXData::DXcontext->Map(vertBuffer, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &ms);
+    memcpy(ms.pData, TriVertices, sizeof(TriVertices));
+    DXData::DXcontext->Unmap(vertBuffer, NULL);
+
+
+
+    //Do the actual rendering
+    //Set up active things the GPU needs to know
+    UINT stride = sizeof(DefaultVertex);
+    UINT offset = 0;
+    DXData::DXcontext->IASetVertexBuffers(0, 1, &vertBuffer, &stride, &offset);
+
+    DXData::DXcontext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    DXData::DXcontext->Draw(3, 0);
+
+    vertBuffer->Release();
 }
 
 void graphicsMainLoop()
@@ -173,10 +254,33 @@ void graphicsMainLoop()
             //renderer->Update();
 
             // Render frames during idle time (when no messages are waiting).
-            //renderer->Render();
+            //Clear the back buffer
+            float clearCol[] = {1.0f, 0.82f, 0.863f, 1.0f};
+            DXData::DXcontext->ClearRenderTargetView(DXData::renderTargetView.Get(), clearCol);
 
+            //Render a test triangle
+            renderTriangle();
             // Present the frame to the screen.
-            //deviceResources->Present();
+            HRESULT hr = DXData::swapChain->Present(0, 0);
         }
     }
+
+    cleanupDirectX();
+}
+
+void cleanupDirectX()
+{
+    //Release shaders
+    DXData::mainShaderProgram.pixelShader.ReleaseAndGetAddressOf();
+    DXData::mainShaderProgram.vertexShader.ReleaseAndGetAddressOf();
+    //Relase other stuff
+    DXData::DXdevice.ReleaseAndGetAddressOf();
+    DXData::DXcontext.ReleaseAndGetAddressOf();
+    DXData::dxgiDevice.ReleaseAndGetAddressOf();
+    DXData::adapter.ReleaseAndGetAddressOf();
+    DXData::factory.ReleaseAndGetAddressOf();
+    DXData::swapChain.ReleaseAndGetAddressOf();
+    DXData::renderTargetView.ReleaseAndGetAddressOf();
+    DXData::depthStencilView.ReleaseAndGetAddressOf();
+    DXData::rasterizerState.ReleaseAndGetAddressOf();
 }

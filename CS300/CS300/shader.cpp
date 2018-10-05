@@ -80,7 +80,7 @@ int loadShaders()
         0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
     };
 
-    hr = DXData::DXdevice->CreateInputLayout(iaDesc, ARRAYSIZE(iaDesc), vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &DXData::mainShaderProgram.vsLayout);
+    hr = DXData::DXdevice->CreateInputLayout(iaDesc, 3, vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &DXData::mainShaderProgram.vsLayout);
 
     if(FAILED(hr))
     {
