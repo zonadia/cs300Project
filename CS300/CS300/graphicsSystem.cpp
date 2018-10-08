@@ -6,6 +6,7 @@
 
 #include "graphicsSystem.h"
 #include "shader.h"
+#include "Mesh.h"
 
 #pragma comment(lib,"d3d11.lib")
 
@@ -27,6 +28,7 @@ namespace DXData
 
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView> renderTargetView;
     Microsoft::WRL::ComPtr<ID3D11DepthStencilView> depthStencilView;
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilState> depthStencilState;
     Microsoft::WRL::ComPtr<ID3D11RasterizerState> rasterizerState;
 
     D3D11_VIEWPORT viewport;
@@ -59,6 +61,37 @@ void createRasterizerState()
     if(FAILED(hr))std::cout << "Failed to create rasterizer state! " << GetLastError() << std::endl;
 
     DXData::DXcontext->RSSetState(DXData::rasterizerState.Get());
+}
+
+void createDepthStencilState()
+{
+    D3D11_DEPTH_STENCIL_DESC desc;
+    ZeroMemory(&desc, sizeof(desc));
+
+    desc.DepthEnable = true;
+    desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+    desc.DepthFunc = D3D11_COMPARISON_LESS;
+
+    desc.StencilEnable = true;
+    desc.StencilReadMask = 0xFF;
+    desc.StencilWriteMask = 0xFF;
+
+    // Stencil operations if pixel is front-facing.
+    desc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+    desc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+    desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+    desc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+    // Stencil operations if pixel is back-facing.
+    desc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+    desc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+    desc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+    desc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+    HRESULT hr = DXData::DXdevice->CreateDepthStencilState(&desc, &DXData::depthStencilState);
+    if(FAILED(hr))std::cout << "Failed to create depth stencil state!\n";
+
+    DXData::DXcontext->OMSetDepthStencilState(DXData::depthStencilState.Get(), 1);
 }
 
 void initDirectX()
@@ -136,6 +169,7 @@ void initDirectX()
     DXData::backBuffer->GetDesc(&DXData::bbDesc);
 
     //Create a depth stencil
+    createDepthStencilState();
     CD3D11_TEXTURE2D_DESC depthStencilDesc(
         DXGI_FORMAT_D24_UNORM_S8_UINT,
         static_cast<UINT> (DXData::bbDesc.Width),
@@ -182,14 +216,17 @@ void renderTriangle()
     //Set shaders as active
     DXData::DXcontext->VSSetShader(DXData::mainShaderProgram.vertexShader.Get(), 0, 0);
     DXData::DXcontext->PSSetShader(DXData::mainShaderProgram.pixelShader.Get(), 0, 0);
-    //Also set the input layout
-    DXData::DXcontext->IASetInputLayout(DXData::mainShaderProgram.vsLayout);
+    
 
 
     //Set up vertex buffers
-    DefaultVertex TriVertices[] = {{0.0f, 0.5f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f, 0.0f}, 
-                                   { 0.45f, -0.5f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f },
-                                   { -0.45f, -0.5f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 1.0f }};
+    /*DefaultVertex TriVertices[] = {{0.0f, 0.5f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f, 0.0f}, 
+                                   { -0.45f, 0.5f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f },
+                                   { -0.45f, -0.5f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 1.0f }};*/
+
+    DefaultVertex TriVertices[] = { {-0.50f, -0.5f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f},
+                                   { 0.5f, -0.5f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f },
+                                   { 0.0f, 0.5f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f } };
 
     //Put buffer into mesh later
     //Create buffer
@@ -219,6 +256,8 @@ void renderTriangle()
     UINT stride = sizeof(DefaultVertex);
     UINT offset = 0;
     DXData::DXcontext->IASetVertexBuffers(0, 1, &vertBuffer, &stride, &offset);
+    //Also set the input layout
+    DXData::DXcontext->IASetInputLayout(DXData::mainShaderProgram.vsLayout);
 
     DXData::DXcontext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
@@ -230,6 +269,10 @@ void renderTriangle()
 void graphicsMainLoop()
 {
     initDirectX();
+    
+    //Load test model
+    Mesh mainModel(DXData::mainShaderProgram.vertexShader.Get(), DXData::mainShaderProgram.pixelShader.Get(), DXData::mainShaderProgram.vsLayout);
+    mainModel.loadMesh("TestMesh", DXData::DXdevice.Get(), DXData::DXcontext.Get());
 
     bool bGotMsg;
     MSG  msg;
@@ -250,6 +293,8 @@ void graphicsMainLoop()
         }
         else
         {
+            DXData::DXcontext->OMSetRenderTargets(1, DXData::renderTargetView.GetAddressOf(), nullptr);
+
             // Update the scene.
             //renderer->Update();
 
@@ -258,8 +303,11 @@ void graphicsMainLoop()
             float clearCol[] = {1.0f, 0.82f, 0.863f, 1.0f};
             DXData::DXcontext->ClearRenderTargetView(DXData::renderTargetView.Get(), clearCol);
 
-            //Render a test triangle
-            renderTriangle();
+            //renderTriangle();
+
+            //Draw mesh
+            mainModel.drawMesh(DXData::DXdevice.Get(), DXData::DXcontext.Get());
+
             // Present the frame to the screen.
             HRESULT hr = DXData::swapChain->Present(0, 0);
         }
@@ -282,5 +330,6 @@ void cleanupDirectX()
     DXData::swapChain.ReleaseAndGetAddressOf();
     DXData::renderTargetView.ReleaseAndGetAddressOf();
     DXData::depthStencilView.ReleaseAndGetAddressOf();
+    DXData::depthStencilState.ReleaseAndGetAddressOf();
     DXData::rasterizerState.ReleaseAndGetAddressOf();
 }

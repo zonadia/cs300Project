@@ -1,5 +1,7 @@
 #pragma once
 
+#include <wrl.h>
+
 //Forward declarations
 struct ID3D11VertexShader;
 struct ID3D11PixelShader;
@@ -17,9 +19,6 @@ struct DefaultVertex
 //A combination of a vertex and pixel shader
 struct shaderProgram
 {
-    ID3D11VertexShader *vShader;
-    ID3D11PixelShader *pShader;
-    
     Microsoft::WRL::ComPtr<ID3D11VertexShader> vertexShader;
     Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShader;
 
