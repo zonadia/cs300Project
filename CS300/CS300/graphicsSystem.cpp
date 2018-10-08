@@ -96,6 +96,7 @@ void createDepthStencilState()
 
 void initDirectX()
 {
+    /*
     D3D_FEATURE_LEVEL levels[] = {
     D3D_FEATURE_LEVEL_9_1,
     D3D_FEATURE_LEVEL_9_2,
@@ -104,6 +105,13 @@ void initDirectX()
     D3D_FEATURE_LEVEL_10_1,
     D3D_FEATURE_LEVEL_11_0,
     D3D_FEATURE_LEVEL_11_1
+    };*/
+
+    D3D_FEATURE_LEVEL levels[] = {
+        D3D_FEATURE_LEVEL_10_0,
+        D3D_FEATURE_LEVEL_10_1,
+        D3D_FEATURE_LEVEL_11_0,
+        D3D_FEATURE_LEVEL_11_1
     };
 
     // This flag adds support for surfaces with a color-channel ordering different
