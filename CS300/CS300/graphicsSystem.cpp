@@ -280,7 +280,7 @@ void graphicsMainLoop()
     
     //Load test model
     Mesh mainModel(DXData::mainShaderProgram.vertexShader.Get(), DXData::mainShaderProgram.pixelShader.Get(), DXData::mainShaderProgram.vsLayout);
-    mainModel.loadMesh("TestMesh", DXData::DXdevice.Get(), DXData::DXcontext.Get());
+    mainModel.loadMesh("teapot_mid_poly.obj", DXData::DXdevice.Get(), DXData::DXcontext.Get());
 
     bool bGotMsg;
     MSG  msg;
@@ -311,7 +311,9 @@ void graphicsMainLoop()
             float clearCol[] = {1.0f, 0.82f, 0.863f, 1.0f};
             DXData::DXcontext->ClearRenderTargetView(DXData::renderTargetView.Get(), clearCol);
 
-            //renderTriangle();
+            //Update Mesh
+            mainModel.rotY += 0.0001f;
+            mainModel.rotX += 0.00004f;
 
             //Draw mesh
             mainModel.drawMesh(DXData::DXdevice.Get(), DXData::DXcontext.Get());

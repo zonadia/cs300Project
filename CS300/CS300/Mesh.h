@@ -18,4 +18,8 @@ public:
     ID3D11Buffer *indexBuffer;
 
     int vertexCount, faceCount;
+
+    float scaleX, scaleY, scaleZ;
+    float transX, transY, transZ;
+    float rotX, rotY, rotZ;
 };
