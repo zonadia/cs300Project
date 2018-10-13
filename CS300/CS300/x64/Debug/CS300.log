@@ -1,2 +1,5 @@
-﻿  graphicsSystem.cpp
+﻿  Mesh.cpp
+c:\users\j.hammond\documents\cs300project\cs300project\cs300\cs300\mesh.cpp(59): warning C4244: '=': conversion from 'std::streamoff' to 'int', possible loss of data
+c:\users\j.hammond\documents\cs300project\cs300project\cs300\cs300\mesh.cpp(108): warning C4101: 'lineLength': unreferenced local variable
+c:\users\j.hammond\documents\cs300project\cs300project\cs300\cs300\mesh.cpp(143): warning C4101: 'lineLength': unreferenced local variable
   CS300.vcxproj -> C:\Users\j.hammond\Documents\CS300Project\cs300Project\CS300\x64\Debug\CS300.exe

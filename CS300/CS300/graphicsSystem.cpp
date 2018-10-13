@@ -280,7 +280,7 @@ void graphicsMainLoop()
     
     //Load test model
     Mesh mainModel(DXData::mainShaderProgram.vertexShader.Get(), DXData::mainShaderProgram.pixelShader.Get(), DXData::mainShaderProgram.vsLayout);
-    mainModel.loadMesh("teapot_mid_poly.obj", DXData::DXdevice.Get(), DXData::DXcontext.Get());
+    mainModel.loadMesh("bunny_high_poly.obj", DXData::DXdevice.Get(), DXData::DXcontext.Get());
 
     bool bGotMsg;
     MSG  msg;

@@ -60,7 +60,7 @@ void Mesh::loadMesh(std::string meshName, ID3D11Device *device, ID3D11DeviceCont
         modelFile.seekg(0, modelFile.beg);
 
         //Read data into buffer
-        buffer = new char[length];
+        buffer = new char[length]{0};
         modelFile.read(buffer, length);
 
         //Close the file
@@ -107,7 +107,7 @@ void Mesh::loadMesh(std::string meshName, ID3D11Device *device, ID3D11DeviceCont
             //Make string out of char line
             int lineLength;
             int subIt = 0;
-            while(buffer[it + ++subIt] != '\n');
+            while(it + subIt + 1 < length && buffer[it + ++subIt] != '\n');
             std::string line(&(buffer[it]), subIt);
             std::string::size_type sz;
             std::string::size_type sz2;
@@ -129,6 +129,8 @@ void Mesh::loadMesh(std::string meshName, ID3D11Device *device, ID3D11DeviceCont
             newVert.z = z;
             vertices.push_back(newVert);
             vertexCount++;
+
+            it += subIt;
             continue;
         }
         //If line starts with a f, load face
@@ -140,7 +142,11 @@ void Mesh::loadMesh(std::string meshName, ID3D11Device *device, ID3D11DeviceCont
             //Make string out of char line
             int lineLength;
             int subIt = 0;
-            while (buffer[it + ++subIt] != '\n');
+            while (it + subIt + 1 < length && buffer[it + ++subIt] != '\n')
+            {
+                char test = buffer[it + subIt];
+                test = test;
+            }
             std::string line(&(buffer[it]), subIt);
             std::string::size_type sz;
             std::string::size_type sz2;
@@ -151,6 +157,8 @@ void Mesh::loadMesh(std::string meshName, ID3D11Device *device, ID3D11DeviceCont
             indices.push_back(static_cast<unsigned int>(f2 - 1));
             indices.push_back(static_cast<unsigned int>(f3 - 1));
             faceCount++;
+
+            it += subIt;
             continue;
         }
         ++it;
