@@ -1,4 +1,5 @@
 #include <Windows.h>
+#include <string>
 
 #include "manageImGui.h"
 
@@ -17,6 +18,11 @@ namespace WinData
 namespace ImGuiData
 {
     float clearCol[4] = {1.0f, 0.298f, 0.561f, 1.0f};
+    int numLights = 1;
+    int numDirLights = 1;
+    int numPointLights = 0;
+    int numSpotLights = 0;
+    float lightColor[16][3] {0};
 }
 
 void initImGui(ID3D11Device *device, ID3D11DeviceContext *context)
@@ -48,7 +54,6 @@ void renderImGuiFrame()
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
 
-    // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
     {
         static float f = 0.0f;
         static int counter = 0;
@@ -59,11 +64,18 @@ void renderImGuiFrame()
 
         ImGui::ColorEdit3("clear color", (float*)&ImGuiData::clearCol); // Edit 3 floats representing a color
 
-        /*
-        if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-            counter++;
-        ImGui::SameLine();
-        ImGui::Text("counter = %d", counter);*/
+        ImGui::SliderInt("Number of lights: ", &ImGuiData::numLights, 1, 16, "%d");
+
+        for(int i = 1;i <= ImGuiData::numLights; ++i)
+        {
+            //Edit the number of lights
+            std::string lightName = "Light ";
+            lightName.append(std::to_string(i));
+            if(ImGui::CollapsingHeader(lightName.c_str()))
+            {
+                ImGui::ColorEdit3(lightName.c_str(), (float*)ImGuiData::lightColor[i - 1]);
+            }
+        }
 
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::End();

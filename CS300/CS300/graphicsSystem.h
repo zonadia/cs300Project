@@ -16,5 +16,6 @@ End Header --------------------------------------------------------*/
 #pragma once
 
 void graphicsMainLoop(std::string modelName);
+void manageWindowResize(int newX, int newY);
 
 void cleanupDirectX();

@@ -141,7 +141,7 @@ int loadDefaultLayoutShader(LPCWSTR vShaderName, LPCWSTR pShaderName, ID3D11Vert
 int loadShaders()
 {
     //Orb lights
-    loadDefaultLayoutShader(L"BasicHLSL_VS.hlsl", L"BasicPixelShader.hlsl", &DXData::mainShaderProgram.vertexShader, &DXData::mainShaderProgram.pixelShader, &DXData::mainShaderProgram.vsLayout);
+    loadDefaultLayoutShader(L"BasicHLSL_VS.hlsl", L"BasicHLSL_PS.hlsl", &DXData::mainShaderProgram.vertexShader, &DXData::mainShaderProgram.pixelShader, &DXData::mainShaderProgram.vsLayout);
 
     //Phong lighting
     loadDefaultLayoutShader(L"PhongLightingVS.hlsl", L"BasicPixelShader.hlsl", &DXData::phongLighting.vertexShader, &DXData::phongLighting.pixelShader, &DXData::phongLighting.vsLayout);
