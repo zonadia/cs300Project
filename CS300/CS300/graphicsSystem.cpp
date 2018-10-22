@@ -1,7 +1,23 @@
+/* Start Header -------------------------------------------------------
+Copyright (C) 2018 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents without the prior written
+consent of DigiPen Institute of Technology is prohibited.
+File Name: graphicsSystem.cpp
+Purpose: Init and run graphics main loop
+Language: Visual Studio 2017 C++
+Platform: Compiler : Visual Studio C++ 14.0
+Hardware must support DirectX 10 or 11
+Operating System requirement: Windows
+Project: allie.hammond_CS300_1
+Author: Allie Hammond (allie.hammond) (180009414)
+Creation date: 10/12/2018
+End Header --------------------------------------------------------*/
+
 #include <Windows.h>
 #include <iostream>
 #include <d3d11.h>
 #include <dxgi1_3.h>
+#include <vector>
 #include <wrl.h>
 
 #include "graphicsSystem.h"
@@ -40,6 +56,7 @@ namespace WinData
 {
     extern HWND windowHandle;
 }
+
 
 void createRasterizerState()
 {
@@ -274,18 +291,31 @@ void renderTriangle()
     vertBuffer->Release();
 }
 
-void graphicsMainLoop()
+void graphicsMainLoop(std::string modelName)
 {
     initDirectX();
     
     //Load test model
     Mesh mainModel(DXData::mainShaderProgram.vertexShader.Get(), DXData::mainShaderProgram.pixelShader.Get(), DXData::mainShaderProgram.vsLayout);
-    mainModel.loadMesh("bunny_high_poly.obj", DXData::DXdevice.Get(), DXData::DXcontext.Get());
+    mainModel.loadMesh(modelName, DXData::DXdevice.Get(), DXData::DXcontext.Get());
+
+    std::vector<Mesh *> spheres(8);
+
+    //Load 8 orbs around in a circle
+    for(int i = 0;i < 8; ++i)
+    {
+        Mesh *orbModel = new Mesh(DXData::mainShaderProgram.vertexShader.Get(), DXData::mainShaderProgram.pixelShader.Get(), DXData::mainShaderProgram.vsLayout);
+        orbModel->r = orbModel->g = 0.5f;
+        orbModel->loadMesh("sphere_mid_poly.obj", DXData::DXdevice.Get(), DXData::DXcontext.Get());
+        spheres[i] = orbModel;
+    }
 
     bool bGotMsg;
     MSG  msg;
     msg.message = WM_NULL;
     PeekMessage(&msg, NULL, 0U, 0U, PM_NOREMOVE);
+
+    float sphereTheta = 0.0f;
 
     while (WM_QUIT != msg.message)
     {
@@ -301,26 +331,45 @@ void graphicsMainLoop()
         }
         else
         {
-            DXData::DXcontext->OMSetRenderTargets(1, DXData::renderTargetView.GetAddressOf(), nullptr);
+            DXData::DXcontext->OMSetRenderTargets(1, DXData::renderTargetView.GetAddressOf(), DXData::depthStencilView.Get());
 
             // Update the scene.
             //renderer->Update();
 
             // Render frames during idle time (when no messages are waiting).
             //Clear the back buffer
-            float clearCol[] = {1.0f, 0.82f, 0.863f, 1.0f};
+            float clearCol[] = {1.0f, 0.298f, 0.561f, 1.0f};
             DXData::DXcontext->ClearRenderTargetView(DXData::renderTargetView.Get(), clearCol);
+            DXData::DXcontext->ClearDepthStencilView(DXData::depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
             //Update Mesh
-            mainModel.rotY += 0.0001f;
-            mainModel.rotX += 0.00004f;
+            mainModel.rotY -= 0.0001f;
+            mainModel.rotZ += 0.00006f;
+
+            sphereTheta += 0.0001f;
 
             //Draw mesh
             mainModel.drawMesh(DXData::DXdevice.Get(), DXData::DXcontext.Get());
 
+            //Draw spheres
+            for(int i = 0;i < 8; ++i)
+            {
+                //Update spheres
+                spheres[i]->transX = 6.0f * sin(2 * 3.14159265 * (i / 8.0f) + sphereTheta);
+                spheres[i]->transZ = 6.0f * cos(2 * 3.14159265 * (i / 8.0f) + sphereTheta);
+
+                spheres[i]->drawMesh(DXData::DXdevice.Get(), DXData::DXcontext.Get());
+            }
+
             // Present the frame to the screen.
             HRESULT hr = DXData::swapChain->Present(0, 0);
         }
+    }
+
+    //Cleanup spheres
+    for(int i = 0;i < 8; ++i)
+    {
+        delete spheres[i];
     }
 
     cleanupDirectX();

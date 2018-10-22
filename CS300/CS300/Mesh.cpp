@@ -1,3 +1,18 @@
+/* Start Header -------------------------------------------------------
+Copyright (C) 2018 DigiPen Institute of Technology.
+Reproduction or disclosure of this file or its contents without the prior written
+consent of DigiPen Institute of Technology is prohibited.
+File Name: Mesh.cpp
+Purpose: Load and draw meshes
+Language: Visual Studio 2017 C++
+Platform: Compiler : Visual Studio C++ 14.0 
+Hardware must support DirectX 10 or 11
+Operating System requirement: Windows
+Project: allie.hammond_CS300_1
+Author: Allie Hammond (allie.hammond) (180009414)
+Creation date: 10/12/2018
+End Header --------------------------------------------------------*/
+
 #include <Windows.h>
 #include <d3d11.h>
 #include <dxgi1_3.h>
@@ -19,7 +34,7 @@ namespace WinData
 Mesh::Mesh(ID3D11VertexShader *verShader, ID3D11PixelShader *pixShader, ID3D11InputLayout *iLayout)
     : vShader(verShader), pShader(pixShader), inLayout(iLayout), vertexCount(0), faceCount(0),
       scaleX(1.0f), scaleY(1.0f), scaleZ(1.0f), transX(0.0f), transY(0.0f), transZ(0.0f),
-      rotX(0.0f), rotY(0.0f), rotZ(0.0f)
+      rotX(0.0f), rotY(0.0f), rotZ(0.0f), r(0.612f), g(0.0f), b(1.0f)
 { }
 
 //Cleanup buffers
@@ -47,7 +62,7 @@ void Mesh::loadMesh(std::string meshName, ID3D11Device *device, ID3D11DeviceCont
     std::ifstream modelFile;
     std::string modelName = "models/";
     modelName.append(meshName);
-    modelFile.open(modelName);
+    modelFile.open(modelName, std::ifstream::binary);
     std::cout << "Loading model from " << modelName << std::endl;
     char *buffer;
     int length = 0;
@@ -56,7 +71,7 @@ void Mesh::loadMesh(std::string meshName, ID3D11Device *device, ID3D11DeviceCont
     {
         //Get length of file
         modelFile.seekg(0, modelFile.end);
-        length = modelFile.tellg();
+        length = static_cast<int>(modelFile.tellg());
         modelFile.seekg(0, modelFile.beg);
 
         //Read data into buffer
@@ -100,12 +115,11 @@ void Mesh::loadMesh(std::string meshName, ID3D11Device *device, ID3D11DeviceCont
         {
             ++it;
             //Read 3 floats into new vertex
-            DefaultVertex newVert = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.8f, 0.8f};
+            DefaultVertex newVert = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, r, g, b};
 
             //Skip space at the front
             ++it;
             //Make string out of char line
-            int lineLength;
             int subIt = 0;
             while(it + subIt + 1 < length && buffer[it + ++subIt] != '\n');
             std::string line(&(buffer[it]), subIt);
@@ -140,7 +154,6 @@ void Mesh::loadMesh(std::string meshName, ID3D11Device *device, ID3D11DeviceCont
             //Skip space at the front
             ++it;
             //Make string out of char line
-            int lineLength;
             int subIt = 0;
             while (it + subIt + 1 < length && buffer[it + ++subIt] != '\n')
             {
@@ -176,6 +189,80 @@ void Mesh::loadMesh(std::string meshName, ID3D11Device *device, ID3D11DeviceCont
     //Delete file buffer
     delete[] buffer;
 
+    struct Normal
+    {
+        float x, y, z;
+    };
+
+    //Process all the face normals
+    std::vector<Normal> normals(faceCount);
+    //Vector of face index normals for vertices
+    std::vector<std::vector<Normal>> adjacents(vertexCount);
+
+    for(int i = 0;i < faceCount; ++i)
+    {
+        DefaultVertex &v1 = vertices[indices[i * 3]];
+        DefaultVertex &v2 = vertices[indices[i * 3 + 1]];
+        DefaultVertex &v3 = vertices[indices[i * 3 + 2]];
+
+        //Calculate vectors U and V
+        Normal vecU, vecV;
+        vecU.x = v2.x - v1.x;
+        vecU.y = v2.y - v1.y;
+        vecU.z = v2.z - v1.z;
+        vecV.x = v3.x - v1.x;
+        vecV.y = v3.y - v1.y;
+        vecV.z = v3.z - v1.z;
+
+        //Calculate normals with dotproducts
+        normals[i].x = vecU.y * vecV.z - vecU.z * vecV.y;
+        normals[i].y = vecU.z * vecV.x - vecU.x * vecV.z;
+        normals[i].z = vecU.x * vecV.y - vecU.y * vecV.x;
+        //Normalize the normals
+        float mag = sqrt(normals[i].x * normals[i].x + normals[i].y * normals[i].y + normals[i].z * normals[i].z);
+
+        normals[i].x /= mag;
+        normals[i].y /= mag;
+        normals[i].z /= mag;
+        //Add this face to all adjacent vertices in the adjaceny list
+        adjacents[indices[i * 3]].push_back(normals[i]);
+        adjacents[indices[i * 3 + 1]].push_back(normals[i]);
+        adjacents[indices[i * 3 + 2]].push_back(normals[i]);
+    }
+
+    //Use adjaceny list to create vertex normals
+    
+    for(int i = 0;i < adjacents.size(); ++i)
+    {
+        //First remove duplicate face normals from each vertex
+        for(int j = 0;j < adjacents[i].size(); ++j)
+        {
+            for(int k = j + 1;k < adjacents[i].size(); ++k)
+            {
+                if(adjacents[i][j].x == adjacents[i][k].x && 
+                    adjacents[i][j].y == adjacents[i][k].y &&
+                    adjacents[i][j].z == adjacents[i][k].z)
+                {
+                    //Normal is a duplicate
+                    adjacents[i].erase(adjacents[i].begin() + k);
+                    j = 0;
+                    break;
+                }
+            }
+        }
+
+        //Average up the remaining normals to get the resulting normal
+        for(int j = 0;j < adjacents[i].size(); ++j)
+        {
+            vertices[i].nx += adjacents[i][j].x;
+            vertices[i].ny += adjacents[i][j].y;
+            vertices[i].nz += adjacents[i][j].z;
+        }
+        vertices[i].nx /= adjacents[i].size();
+        vertices[i].ny /= adjacents[i].size();
+        vertices[i].nz /= adjacents[i].size();
+    }
+    
 
     //Setup vertex buffer
     //Create buffer
@@ -234,11 +321,13 @@ void Mesh::drawMesh(ID3D11Device *device, ID3D11DeviceContext *context)
     struct VS_CONSTANT_BUFFER
     {
         XMMATRIX MVPMatrix;
+        XMMATRIX Rotation;
+        XMFLOAT4 lightDir;
+        XMFLOAT4 Ia;
     };
 
-
     //Set the MVP matrix
-    XMFLOAT3 eye(0.0f, 0.0f, 7.0f);
+    XMFLOAT3 eye(0.0f, 2.0f, 6.5f);
     XMFLOAT3 focusPosition(0.0f, 0.0f, 0.0f);
     XMFLOAT3 upVector(0.0f, 1.0f, 0.0f);
 
@@ -259,6 +348,13 @@ void Mesh::drawMesh(ID3D11Device *device, ID3D11DeviceContext *context)
     ID3D11Buffer *constBuffer;
     VS_CONSTANT_BUFFER cBuf;
     cBuf.MVPMatrix = XMMatrixMultiply(projection, view);
+    cBuf.Rotation = rot;
+
+    //Fill in constant buffer for light information
+    cBuf.lightDir = XMFLOAT4(-6.0f, 2.0f, 3.0f, 1.0f);
+    XMVECTOR normL = XMVector3Normalize(XMLoadFloat4(&cBuf.lightDir));
+    XMStoreFloat4(&cBuf.lightDir, normL);
+    cBuf.Ia = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 
     // Fill in a buffer description.
     D3D11_BUFFER_DESC cbDesc;
@@ -285,6 +381,7 @@ void Mesh::drawMesh(ID3D11Device *device, ID3D11DeviceContext *context)
 
     // Set the buffer.
     context->VSSetConstantBuffers(0, 1, &constBuffer);
+    context->PSSetConstantBuffers(0, 1, &constBuffer);
 
 
     //Set up active things the GPU needs to know
@@ -298,4 +395,6 @@ void Mesh::drawMesh(ID3D11Device *device, ID3D11DeviceContext *context)
     context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     
     context->DrawIndexed(static_cast<unsigned int>(faceCount * 3), 0, 0);
+
+    constBuffer->Release();
 }
