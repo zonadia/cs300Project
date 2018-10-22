@@ -31,6 +31,8 @@ namespace DXData
     extern Microsoft::WRL::ComPtr<IDXGIDevice3> dxgiDevice;
 
     shaderProgram mainShaderProgram;
+    shaderProgram imGuiShaderProgram;
+    shaderProgram phongLighting;
 }
 
 HRESULT CompileShader(_In_ LPCWSTR srcFile, _In_ LPCSTR entryPoint, _In_ LPCSTR profile, _Outptr_ ID3DBlob** blob)
@@ -70,12 +72,11 @@ HRESULT CompileShader(_In_ LPCWSTR srcFile, _In_ LPCSTR entryPoint, _In_ LPCSTR 
     return hr;
 }
 
-//Return -1 on fail
-int loadShaders()
+int loadDefaultLayoutShader(LPCWSTR vShaderName, LPCWSTR pShaderName, ID3D11VertexShader **vShader, ID3D11PixelShader **pShader, ID3D11InputLayout **inLayout)
 {
     // Compile vertex shader
     ID3DBlob *vsBlob = nullptr;
-    HRESULT hr = CompileShader(L"BasicHLSL_VS.hlsl", "VSMain", "vs_4_0_level_9_1", &vsBlob);
+    HRESULT hr = CompileShader(vShaderName, "VSMain", "vs_4_0_level_9_1", &vsBlob);
     if (FAILED(hr))
     {
         std::cout << "Failed compiling vertex shader!" << std::endl;
@@ -96,9 +97,9 @@ int loadShaders()
         0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
     };
 
-    hr = DXData::DXdevice->CreateInputLayout(iaDesc, 3, vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &DXData::mainShaderProgram.vsLayout);
+    hr = DXData::DXdevice->CreateInputLayout(iaDesc, 3, vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), inLayout);
 
-    if(FAILED(hr))
+    if (FAILED(hr))
     {
         std::cout << "Failed to create vertex shader input layout!\n";
         return -1;
@@ -106,7 +107,7 @@ int loadShaders()
 
     // Compile pixel shader
     ID3DBlob *psBlob = nullptr;
-    hr = CompileShader(L"BasicHLSL_PS.hlsl", "PSMain", "ps_4_0_level_9_1", &psBlob);
+    hr = CompileShader(pShaderName, "PSMain", "ps_4_0_level_9_1", &psBlob);
     if (FAILED(hr))
     {
         vsBlob->Release();
@@ -118,12 +119,12 @@ int loadShaders()
 
 
     //Create shaders
-    hr = DXData::DXdevice->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &DXData::mainShaderProgram.vertexShader);
-    if(FAILED(hr))
+    hr = DXData::DXdevice->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, vShader);
+    if (FAILED(hr))
     {
         std::cout << "Failed to create vertex shader!\n";
     }
-    hr = DXData::DXdevice->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &DXData::mainShaderProgram.pixelShader);
+    hr = DXData::DXdevice->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, pShader);
     if (FAILED(hr))
     {
         std::cout << "Failed to create pixel shader!\n";
@@ -133,7 +134,17 @@ int loadShaders()
     vsBlob->Release();
     psBlob->Release();
 
+    return 0;
+}
 
+//Return -1 on fail
+int loadShaders()
+{
+    //Orb lights
+    loadDefaultLayoutShader(L"BasicHLSL_VS.hlsl", L"BasicPixelShader.hlsl", &DXData::mainShaderProgram.vertexShader, &DXData::mainShaderProgram.pixelShader, &DXData::mainShaderProgram.vsLayout);
+
+    //Phong lighting
+    loadDefaultLayoutShader(L"PhongLightingVS.hlsl", L"BasicPixelShader.hlsl", &DXData::phongLighting.vertexShader, &DXData::phongLighting.pixelShader, &DXData::phongLighting.vsLayout);
 
     return 0;
 }

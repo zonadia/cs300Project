@@ -2,8 +2,8 @@
 Copyright (C) 2018 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents without the prior written
 consent of DigiPen Institute of Technology is prohibited.
-File Name: BasicHLSL_PS.hlsl
-Purpose: Default Pixel Shader
+File Name: BasicHLSL_VS.hlsl
+Purpose: Default Vertex Shader
 Language: Visual Studio 2017 C++
 Platform: Compiler : Visual Studio C++ 14.0
 Hardware must support DirectX 10 or 11
@@ -22,20 +22,31 @@ cbuffer VS_CONSTANT_BUFFER : register(b0)
     int numDirLights;
 };
 
-struct PS_INPUT
+
+struct VS_INPUT
+{
+    float3 vPosition : POSITION;
+    float3 vNormal : NORMAL;
+    float3 vColor : COLOR;
+};
+
+struct VS_OUTPUT
 {
     float4 vPosition : SV_POSITION;
     float4 vNormal : NORMAL;
     float3 vColor : COLOR;
 };
 
-float4 PSMain( PS_INPUT Input ) : SV_TARGET
+
+VS_OUTPUT VSMain(VS_INPUT Input)
 {
-    float4 Ka = float4(0.05f, 0.05f, 0.05f, 1.0f);
-    float4 Id = float4(1.0f, 1.0f, 1.0f, 1.0f);
+    VS_OUTPUT Output;
 
-    float4 ambient = Ia[0] * Ka;
-    float4 diffuse = Id * float4(Input.vColor, 1.0f) * dot(Input.vNormal, lightDir[0]);
+    Output.vPosition = mul(float4(Input.vPosition, 1.0f), MVPMatrix);
+    //Output.vPosition = mul(MVPMatrix, float4(Input.vPosition, 1.0f));
+    //Output.vPosition = float4(Input.vPosition, 1.0f);
+    Output.vNormal = mul(float4(Input.vNormal, 1.0f), Rotation);
+    Output.vColor = Input.vColor.xyz;
 
-    return ambient + diffuse;
+    return Output;
 }

@@ -21,6 +21,7 @@ End Header --------------------------------------------------------*/
 #include <fstream>
 #include <vector>
 #include <DirectXMath.h>
+#include <algorithm>
 
 #include "shader.h"
 #include "Mesh.h"
@@ -182,6 +183,9 @@ void Mesh::loadMesh(std::string meshName, ID3D11Device *device, ID3D11DeviceCont
     scaleY = 2.0f / (maxY - minY);
     scaleZ = 2.0f / (maxZ - minZ);
 
+    //Set all scales equal to the greatest scale
+    scaleX = scaleY = scaleZ = (std::max)((std::max)(scaleX, scaleY), scaleZ);
+
     transX = -((maxX + minX) / 2.0f) * scaleX;
     transY = -((maxY + minY) / 2.0f) * scaleY;
     transZ = -((maxZ + minZ) / 2.0f) * scaleZ;
@@ -322,8 +326,9 @@ void Mesh::drawMesh(ID3D11Device *device, ID3D11DeviceContext *context)
     {
         XMMATRIX MVPMatrix;
         XMMATRIX Rotation;
-        XMFLOAT4 lightDir;
-        XMFLOAT4 Ia;
+        XMFLOAT4 lightDir[16];
+        XMFLOAT4 Ia[16];
+        int numDirLights;
     };
 
     //Set the MVP matrix
@@ -349,12 +354,16 @@ void Mesh::drawMesh(ID3D11Device *device, ID3D11DeviceContext *context)
     VS_CONSTANT_BUFFER cBuf;
     cBuf.MVPMatrix = XMMatrixMultiply(projection, view);
     cBuf.Rotation = rot;
+    cBuf.numDirLights = 1;
 
-    //Fill in constant buffer for light information
-    cBuf.lightDir = XMFLOAT4(-6.0f, 2.0f, 3.0f, 1.0f);
-    XMVECTOR normL = XMVector3Normalize(XMLoadFloat4(&cBuf.lightDir));
-    XMStoreFloat4(&cBuf.lightDir, normL);
-    cBuf.Ia = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+    for(int i =0;i < 16; ++i)
+    {
+        //Fill in constant buffer for light information
+        cBuf.lightDir[i] = XMFLOAT4(-6.0f, 2.0f, 3.0f, 1.0f);
+        XMVECTOR normL = XMVector3Normalize(XMLoadFloat4(&cBuf.lightDir[i]));
+        XMStoreFloat4(&cBuf.lightDir[i], normL);
+        cBuf.Ia[i] = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+    }
 
     // Fill in a buffer description.
     D3D11_BUFFER_DESC cbDesc;
@@ -377,6 +386,8 @@ void Mesh::drawMesh(ID3D11Device *device, ID3D11DeviceContext *context)
     if (FAILED(hr))
     {
         std::cout << "Failed to create constant buffer\n";
+        auto reason = device->GetDeviceRemovedReason();
+        std::cout << "aaaaaaaaaaa\n";
     }
 
     // Set the buffer.

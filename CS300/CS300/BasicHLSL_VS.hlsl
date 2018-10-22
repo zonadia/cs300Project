@@ -17,8 +17,9 @@ cbuffer VS_CONSTANT_BUFFER : register(b0)
 {
     matrix MVPMatrix;
     matrix Rotation;
-    float4 lightDir;
-    float4 Ia;
+    float4 lightDir[16];
+    float4 Ia[16];
+    int numDirLights;
 };
 
 

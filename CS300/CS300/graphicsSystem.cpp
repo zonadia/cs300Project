@@ -21,10 +21,16 @@ End Header --------------------------------------------------------*/
 #include <wrl.h>
 
 #include "graphicsSystem.h"
+#include "manageImGui.h"
 #include "shader.h"
 #include "Mesh.h"
 
 #pragma comment(lib,"d3d11.lib")
+
+namespace ImGuiData
+{
+    extern float clearCol[4];
+}
 
 namespace DXData
 {
@@ -50,6 +56,7 @@ namespace DXData
     D3D11_VIEWPORT viewport;
 
     extern shaderProgram mainShaderProgram;
+    extern shaderProgram phongLighting;
 }
 
 namespace WinData
@@ -125,8 +132,6 @@ void initDirectX()
     };*/
 
     D3D_FEATURE_LEVEL levels[] = {
-        D3D_FEATURE_LEVEL_10_0,
-        D3D_FEATURE_LEVEL_10_1,
         D3D_FEATURE_LEVEL_11_0,
         D3D_FEATURE_LEVEL_11_1
     };
@@ -294,7 +299,9 @@ void renderTriangle()
 void graphicsMainLoop(std::string modelName)
 {
     initDirectX();
-    
+    initImGui(DXData::DXdevice.Get(), DXData::DXcontext.Get());
+
+
     //Load test model
     Mesh mainModel(DXData::mainShaderProgram.vertexShader.Get(), DXData::mainShaderProgram.pixelShader.Get(), DXData::mainShaderProgram.vsLayout);
     mainModel.loadMesh(modelName, DXData::DXdevice.Get(), DXData::DXcontext.Get());
@@ -338,8 +345,8 @@ void graphicsMainLoop(std::string modelName)
 
             // Render frames during idle time (when no messages are waiting).
             //Clear the back buffer
-            float clearCol[] = {1.0f, 0.298f, 0.561f, 1.0f};
-            DXData::DXcontext->ClearRenderTargetView(DXData::renderTargetView.Get(), clearCol);
+            
+            DXData::DXcontext->ClearRenderTargetView(DXData::renderTargetView.Get(), ImGuiData::clearCol);
             DXData::DXcontext->ClearDepthStencilView(DXData::depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
             //Update Mesh
@@ -361,6 +368,9 @@ void graphicsMainLoop(std::string modelName)
                 spheres[i]->drawMesh(DXData::DXdevice.Get(), DXData::DXcontext.Get());
             }
 
+            renderImGuiFrame();
+
+
             // Present the frame to the screen.
             HRESULT hr = DXData::swapChain->Present(0, 0);
         }
@@ -371,7 +381,7 @@ void graphicsMainLoop(std::string modelName)
     {
         delete spheres[i];
     }
-
+    cleanupImGui();
     cleanupDirectX();
 }
 
