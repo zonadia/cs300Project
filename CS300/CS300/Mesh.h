@@ -34,6 +34,8 @@ public:
 
     int vertexCount, faceCount;
 
+    DefaultVertex *meshVertices;
+
     float scaleX, scaleY, scaleZ;
     float transX, transY, transZ;
     float rotX, rotY, rotZ;

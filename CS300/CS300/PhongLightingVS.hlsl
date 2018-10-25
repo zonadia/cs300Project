@@ -17,9 +17,15 @@ cbuffer VS_CONSTANT_BUFFER : register(b0)
 {
     matrix MVPMatrix;
     matrix Rotation;
-    float4 lightDir[16];
-    float4 Ia[16];
-    int numDirLights;
+    float4 globalAmbient;
+    float4 lightDir[16]; //Light direction (for directional/spotlights)
+    float4 Ia[16]; //Light ambient intensity (light color)
+    float4 lightPos[16]; // Light position
+    float4 theta[16]; //For spotlights
+    float4 phi[16]; // For spotlights
+    int4 numLights; //Number of lights
+    int4 lightType[16]; //Type of light 0 - dir 1 - point 2 - spotlight
+    float4 Ka;
 };
 
 
@@ -43,10 +49,17 @@ VS_OUTPUT VSMain(VS_INPUT Input)
     VS_OUTPUT Output;
 
     Output.vPosition = mul(float4(Input.vPosition, 1.0f), MVPMatrix);
-    //Output.vPosition = mul(MVPMatrix, float4(Input.vPosition, 1.0f));
-    //Output.vPosition = float4(Input.vPosition, 1.0f);
     Output.vNormal = mul(float4(Input.vNormal, 1.0f), Rotation);
-    Output.vColor = Input.vColor.xyz;
+
+    
+    float4 outColor = globalAmbient * Ka;
+
+    //Loop through all the lights
+
+
+    Output.vColor = float3(Ka, Ka, Ka);
+    //Output.vColor = outColor.xyz;
+    //Output.vColor = Input.vColor.xyz;
 
     return Output;
 }

@@ -32,6 +32,21 @@ namespace WinData
     extern int windowHeight;
 };
 
+namespace ImGuiData
+{
+    extern float clearCol[4];
+    extern int numLights;
+    extern float lightColor[16][3];
+    extern int lightType[16];
+    extern float lightDirection[16][3];
+    extern float lightPos[16][3];
+    extern float theta[16];
+    extern float phi[16];
+    extern float cameraZoom;
+    extern float Ka;
+    extern float globalAmbient[3];
+};
+
 Mesh::Mesh(ID3D11VertexShader *verShader, ID3D11PixelShader *pixShader, ID3D11InputLayout *iLayout)
     : vShader(verShader), pShader(pixShader), inLayout(iLayout), vertexCount(0), faceCount(0),
       scaleX(1.0f), scaleY(1.0f), scaleZ(1.0f), transX(0.0f), transY(0.0f), transZ(0.0f),
@@ -43,6 +58,7 @@ Mesh::~Mesh()
 {
     vertexBuffer->Release();
     indexBuffer->Release();
+    delete[] meshVertices;
 }
 
 void Mesh::loadMesh(std::string meshName, ID3D11Device *device, ID3D11DeviceContext *context)
@@ -52,6 +68,7 @@ void Mesh::loadMesh(std::string meshName, ID3D11Device *device, ID3D11DeviceCont
     {
         vertexBuffer->Release();
         indexBuffer->Release();
+        delete[] meshVertices;
     }
 
     vertexCount = faceCount = 0;
@@ -267,6 +284,13 @@ void Mesh::loadMesh(std::string meshName, ID3D11Device *device, ID3D11DeviceCont
         vertices[i].nz /= adjacents[i].size();
     }
     
+    //Copy all the vertices
+    meshVertices = new DefaultVertex[vertexCount];
+    for(int i = 0;i < vertexCount; ++i)
+    {
+        meshVertices[i] = vertices[i];
+    }
+    
 
     //Setup vertex buffer
     //Create buffer
@@ -326,13 +350,20 @@ void Mesh::drawMesh(ID3D11Device *device, ID3D11DeviceContext *context)
     {
         XMMATRIX MVPMatrix;
         XMMATRIX Rotation;
-        XMFLOAT4 lightDir[16];
-        XMFLOAT4 Ia[16];
-        int numDirLights;
+        XMFLOAT4 globalAmbient;
+        XMFLOAT4 lightDir[16]; //Light direction (for directional/spotlights)
+        XMFLOAT4 Ia[16]; //Light ambient intensity (light color)
+        XMFLOAT4 lightPos[16]; // Light position
+        XMFLOAT4 theta[16]; //For spotlights
+        XMFLOAT4 phi[16]; // For spotlights
+        XMINT4 numLights; //Number of lights
+        XMINT4 lightType[16]; //Type of light 0 - dir 1 - point 2 - spotlight
+        float xx[16];
+        XMFLOAT4 Ka; // Object ambient intensity
     };
 
     //Set the MVP matrix
-    XMFLOAT3 eye(0.0f, 2.0f, 6.5f);
+    XMFLOAT3 eye(0.0f, (1.3f / 3.0f) * ImGuiData::cameraZoom, ImGuiData::cameraZoom);
     XMFLOAT3 focusPosition(0.0f, 0.0f, 0.0f);
     XMFLOAT3 upVector(0.0f, 1.0f, 0.0f);
 
@@ -354,15 +385,20 @@ void Mesh::drawMesh(ID3D11Device *device, ID3D11DeviceContext *context)
     VS_CONSTANT_BUFFER cBuf;
     cBuf.MVPMatrix = XMMatrixMultiply(projection, view);
     cBuf.Rotation = rot;
-    cBuf.numDirLights = 1;
+    cBuf.numLights = XMINT4(ImGuiData::numLights, 0, 0, 0);
+    cBuf.globalAmbient = XMFLOAT4(ImGuiData::globalAmbient[0], ImGuiData::globalAmbient[1], ImGuiData::globalAmbient[2], 1.0f);
+    cBuf.Ka = XMFLOAT4(ImGuiData::Ka, 0.0f, 0.0f, 0.0f);
 
-    for(int i =0;i < 16; ++i)
+    for(int i = 0;i < 16; ++i)
     {
         //Fill in constant buffer for light information
         cBuf.lightDir[i] = XMFLOAT4(-6.0f, 2.0f, 3.0f, 1.0f);
         XMVECTOR normL = XMVector3Normalize(XMLoadFloat4(&cBuf.lightDir[i]));
         XMStoreFloat4(&cBuf.lightDir[i], normL);
         cBuf.Ia[i] = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+        cBuf.lightPos[i] = XMFLOAT4(ImGuiData::lightPos[i][0], ImGuiData::lightPos[i][1], ImGuiData::lightPos[i][2], 1.0f);
+        cBuf.theta[i] = XMFLOAT4(ImGuiData::theta[i], 0.0f, 0.0f, 0.0f);
+        cBuf.phi[i] = XMFLOAT4(ImGuiData::phi[i], 0.0f, 0.0f, 0.0f);
     }
 
     // Fill in a buffer description.
@@ -393,6 +429,19 @@ void Mesh::drawMesh(ID3D11Device *device, ID3D11DeviceContext *context)
     // Set the buffer.
     context->VSSetConstantBuffers(0, 1, &constBuffer);
     context->PSSetConstantBuffers(0, 1, &constBuffer);
+
+    //Update the color in the vertex buffer
+    for(int i = 0;i < vertexCount; ++i)
+    {
+        meshVertices[i].r = r;
+        meshVertices[i].g = g;
+        meshVertices[i].b = b;
+    }
+
+    D3D11_MAPPED_SUBRESOURCE ms;
+    context->Map(vertexBuffer, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &ms);
+    memcpy(ms.pData, meshVertices, sizeof(DefaultVertex) * vertexCount);
+    context->Unmap(vertexBuffer, NULL);
 
 
     //Set up active things the GPU needs to know

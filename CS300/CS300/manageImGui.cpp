@@ -18,15 +18,31 @@ namespace WinData
 namespace ImGuiData
 {
     float clearCol[4] = {1.0f, 0.298f, 0.561f, 1.0f};
-    int numLights = 1;
-    int numDirLights = 1;
-    int numPointLights = 0;
-    int numSpotLights = 0;
-    float lightColor[16][3] {0};
+    int numLights = 4;
+    float lightColor[16][3] {1.0f};
+    int lightType[16] {0};
+    float lightDirection[16][3]{1.0f};
+    float lightPos[16][3]{1.0f};
+    float theta[16]{0.5f};
+    float phi[16]{1.0f};
+    float cameraZoom = 18.0f;
+    float Ka = 0.0f;
+    float globalAmbient[3] = {0.6f, 0.6f, 0.6f};
+}
+
+void initImGuiValues()
+{
+    for(int i = 0;i < 16; ++i)
+    {
+        ImGuiData::lightColor[i][0] = 0.0f;
+        ImGuiData::lightColor[i][1] = 0.4f;
+        ImGuiData::lightColor[i][2] = 0.7f;
+    }
 }
 
 void initImGui(ID3D11Device *device, ID3D11DeviceContext *context)
 {
+    initImGuiValues();
     // Setup Dear ImGui binding
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -64,16 +80,49 @@ void renderImGuiFrame()
 
         ImGui::ColorEdit3("clear color", (float*)&ImGuiData::clearCol); // Edit 3 floats representing a color
 
+        ImGui::SliderFloat("Camera Zoom", &ImGuiData::cameraZoom, 2.0f, 50.0f);
+
+        ImGui::ColorEdit3("Global Ambient", (float*)&ImGuiData::globalAmbient);
+
+        ImGui::SliderFloat("Model ambient intensity (Ka): ", &ImGuiData::Ka, 0.0f, 1.0f);
+
         ImGui::SliderInt("Number of lights: ", &ImGuiData::numLights, 1, 16, "%d");
 
-        for(int i = 1;i <= ImGuiData::numLights; ++i)
+        if(ImGui::CollapsingHeader("Light Settings"))
         {
-            //Edit the number of lights
-            std::string lightName = "Light ";
-            lightName.append(std::to_string(i));
-            if(ImGui::CollapsingHeader(lightName.c_str()))
+            for(int i = 0;i < ImGuiData::numLights; ++i)
             {
-                ImGui::ColorEdit3(lightName.c_str(), (float*)ImGuiData::lightColor[i - 1]);
+                //Edit the number of lights
+                std::string lightName = "Light ";
+                lightName.append(std::to_string(i));
+                if(ImGui::CollapsingHeader(lightName.c_str()))
+                {
+                    //Light color selection
+                    ImGui::ColorEdit3(lightName.c_str(), (float*)ImGuiData::lightColor[i]);
+                    //Light type selection
+                    const char *lightOptions[] = {"Directional", "Point", "Spotlight"};
+                    std::string lightTypeName = "Light Type: ";
+                    lightTypeName.append(std::to_string(i));
+                    ImGui::ListBox(lightTypeName.c_str(), &ImGuiData::lightType[i], lightOptions, 3);
+
+                    //Directional light options
+                    if(ImGuiData::lightType[i] == 0 || ImGuiData::lightType[i] == 2)
+                    {
+                        std::string lightDirName = "Direction: ";
+                        lightDirName.append(std::to_string(i));
+                        ImGui::InputFloat3(lightDirName.c_str(), ImGuiData::lightDirection[i], 3);
+                    }
+                    //Spotlight specific light options
+                    if (ImGuiData::lightType[i] == 2)
+                    {
+                        std::string innerAngleName = "Theta(Inner Angle): ";
+                        innerAngleName.append(std::to_string(i));
+                        ImGui::InputFloat(innerAngleName.c_str(), &ImGuiData::theta[i]);
+                        std::string outerAngleName = "Phi(Outer Angle): ";
+                        outerAngleName.append(std::to_string(i));
+                        ImGui::InputFloat(outerAngleName.c_str(), &ImGuiData::phi[i]);
+                    }
+                }
             }
         }
 
@@ -86,35 +135,3 @@ void renderImGuiFrame()
     ImGui::Render();
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 }
-
-//I think this function is unneeded? Maybe??
-/*
-void imGuiDraw()
-{
-    ImDrawData *drawData = ImGui::GetDrawData();
-
-    if(drawData->Valid)
-    {
-        int drawListIt = 0;
-        //Loop through draw lists
-        while(drawListIt < drawData->CmdListsCount)
-        {
-            ImDrawList *drawList = drawData->CmdLists[drawListIt];
-            int commandIt = 0;
-            int indexIt = 0;
-            //Iterate through draw commands
-            while(commandIt < drawList->CmdBuffer.size())
-            {
-                //Draw all the things
-
-
-
-                indexIt += drawList->CmdBuffer[commandIt].ElemCount;
-                ++commandIt;
-            }
-            
-            ++drawListIt;
-        }
-
-    }
-}*/

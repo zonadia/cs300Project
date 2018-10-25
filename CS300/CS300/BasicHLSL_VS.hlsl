@@ -17,9 +17,15 @@ cbuffer VS_CONSTANT_BUFFER : register(b0)
 {
     matrix MVPMatrix;
     matrix Rotation;
-    float4 lightDir[16];
-    float4 Ia[16];
-    int numDirLights;
+    float4 globalAmbient;
+    float4 lightDir[16]; //Light direction (for directional/spotlights)
+    float4 Ia[16]; //Light ambient intensity (light color)
+    float4 lightPos[16]; // Light position
+    float theta[16]; //For spotlights
+    float phi[16]; // For spotlights
+    int numLights; //Number of lights
+    int lightType[16]; //Type of light 0 - dir 1 - point 2 - spotlight
+    float Ka;
 };
 
 

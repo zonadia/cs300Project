@@ -30,6 +30,13 @@ End Header --------------------------------------------------------*/
 namespace ImGuiData
 {
     extern float clearCol[4];
+    extern int numLights;
+    extern float lightColor[16][3];
+    extern int lightType[16];
+    extern float lightDirection[16][3];
+    extern float lightPos[16][3];
+    extern float theta[16];
+    extern float phi[16];
 }
 
 namespace DXData
@@ -303,13 +310,13 @@ void graphicsMainLoop(std::string modelName)
 
 
     //Load test model
-    Mesh mainModel(DXData::mainShaderProgram.vertexShader.Get(), DXData::mainShaderProgram.pixelShader.Get(), DXData::mainShaderProgram.vsLayout);
+    Mesh mainModel(DXData::phongLighting.vertexShader.Get(), DXData::phongLighting.pixelShader.Get(), DXData::phongLighting.vsLayout);
     mainModel.loadMesh(modelName, DXData::DXdevice.Get(), DXData::DXcontext.Get());
 
-    std::vector<Mesh *> spheres(8);
+    std::vector<Mesh *> spheres(16);
 
-    //Load 8 orbs around in a circle
-    for(int i = 0;i < 8; ++i)
+    //Load 16 orbs around in a circle
+    for(int i = 0;i < 16; ++i)
     {
         Mesh *orbModel = new Mesh(DXData::mainShaderProgram.vertexShader.Get(), DXData::mainShaderProgram.pixelShader.Get(), DXData::mainShaderProgram.vsLayout);
         orbModel->r = orbModel->g = 0.5f;
@@ -359,11 +366,21 @@ void graphicsMainLoop(std::string modelName)
             mainModel.drawMesh(DXData::DXdevice.Get(), DXData::DXcontext.Get());
 
             //Draw spheres
-            for(int i = 0;i < 8; ++i)
+            for(int i = 0;i < ImGuiData::numLights; ++i)
             {
                 //Update spheres
-                spheres[i]->transX = 6.0f * sin(2 * 3.14159265 * (i / 8.0f) + sphereTheta);
-                spheres[i]->transZ = 6.0f * cos(2 * 3.14159265 * (i / 8.0f) + sphereTheta);
+                spheres[i]->transX = 6.0f * sin(2 * 3.14159265 * (i / (float)ImGuiData::numLights) + sphereTheta);
+                spheres[i]->transZ = 6.0f * cos(2 * 3.14159265 * (i / (float)ImGuiData::numLights) + sphereTheta);
+
+                //Update sphere colors
+                spheres[i]->r = ImGuiData::lightColor[i][0];
+                spheres[i]->g = ImGuiData::lightColor[i][1];
+                spheres[i]->b = ImGuiData::lightColor[i][2];
+
+                //Update sphere position to be passed to GPU
+                ImGuiData::lightPos[i][0] = spheres[i]->transX;
+                ImGuiData::lightPos[i][1] = spheres[i]->transY;
+                ImGuiData::lightPos[i][2] = spheres[i]->transZ;
 
                 spheres[i]->drawMesh(DXData::DXdevice.Get(), DXData::DXcontext.Get());
             }
@@ -377,7 +394,7 @@ void graphicsMainLoop(std::string modelName)
     }
 
     //Cleanup spheres
-    for(int i = 0;i < 8; ++i)
+    for(int i = 0;i < 16; ++i)
     {
         delete spheres[i];
     }

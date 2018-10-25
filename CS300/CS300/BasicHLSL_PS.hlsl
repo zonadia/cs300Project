@@ -17,9 +17,15 @@ cbuffer VS_CONSTANT_BUFFER : register(b0)
 {
     matrix MVPMatrix;
     matrix Rotation;
-    float4 lightDir[16];
-    float4 Ia[16];
-    int numDirLights;
+    float4 globalAmbient;
+    float4 lightDir[16]; //Light direction (for directional/spotlights)
+    float4 Ia[16]; //Light ambient intensity (light color)
+    float4 lightPos[16]; // Light position
+    float theta[16]; //For spotlights
+    float phi[16]; // For spotlights
+    int numLights; //Number of lights
+    int lightType[16]; //Type of light 0 - dir 1 - point 2 - spotlight
+    float Ka;
 };
 
 struct PS_INPUT
@@ -31,11 +37,13 @@ struct PS_INPUT
 
 float4 PSMain( PS_INPUT Input ) : SV_TARGET
 {
+    /*
     float4 Ka = float4(0.05f, 0.05f, 0.05f, 1.0f);
     float4 Id = float4(1.0f, 1.0f, 1.0f, 1.0f);
 
     float4 ambient = Ia[0] * Ka;
     float4 diffuse = Id * float4(Input.vColor, 1.0f) * dot(Input.vNormal, lightDir[0]);
 
-    return ambient + diffuse;
+    return ambient + diffuse;*/
+    return float4(Input.vColor, 1.0f);
 }
