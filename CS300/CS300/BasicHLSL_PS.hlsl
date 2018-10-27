@@ -21,11 +21,11 @@ cbuffer VS_CONSTANT_BUFFER : register(b0)
     float4 lightDir[16]; //Light direction (for directional/spotlights)
     float4 Ia[16]; //Light ambient intensity (light color)
     float4 lightPos[16]; // Light position
-    float theta[16]; //For spotlights
-    float phi[16]; // For spotlights
-    int numLights; //Number of lights
-    int lightType[16]; //Type of light 0 - dir 1 - point 2 - spotlight
-    float Ka;
+    float4 theta[16]; //For spotlights
+    float4 phi[16]; // For spotlights
+    int4 numLights; //Number of lights
+    int4 lightType[16]; //Type of light 0 - dir 1 - point 2 - spotlight
+    float4 Ka;
 };
 
 struct PS_INPUT

@@ -358,7 +358,6 @@ void Mesh::drawMesh(ID3D11Device *device, ID3D11DeviceContext *context)
         XMFLOAT4 phi[16]; // For spotlights
         XMINT4 numLights; //Number of lights
         XMINT4 lightType[16]; //Type of light 0 - dir 1 - point 2 - spotlight
-        float xx[16];
         XMFLOAT4 Ka; // Object ambient intensity
     };
 

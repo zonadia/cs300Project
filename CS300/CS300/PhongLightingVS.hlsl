@@ -52,14 +52,66 @@ VS_OUTPUT VSMain(VS_INPUT Input)
     Output.vNormal = mul(float4(Input.vNormal, 1.0f), Rotation);
 
     
-    float4 outColor = globalAmbient * Ka;
+    float4 outColor = globalAmbient * Ka[0];
+    float Kd = 0.7f;
+    float Ks = 0.7f;
 
     //Loop through all the lights
+    for(int i = 0;i < numLights[0]; ++i)
+    {
+        //Constants
+        float c1 = 1.0f;
+        float c2 = 0.1f;
+        float c3 = 0.1f;
 
+        float ns = 0.3f;
 
-    Output.vColor = float3(Ka, Ka, Ka);
-    //Output.vColor = outColor.xyz;
-    //Output.vColor = Input.vColor.xyz;
+        //Calculate attenuation
+        float dL = distance(Output.vPosition.xyz, lightPos[i].xyz);
+        float att = 1.0f;
+
+        if(lightType[i][0] != 0)//For spotlights or point lights
+        {
+            att = min(1.0f / (c1 + c2*dL + c3 * dL *dL), 1.0f);
+        }
+
+        //Ambient
+        Output.vColor += Ia[i] * att;
+        //Specular and diffuse
+        float spotlight = 1.0f;
+        //L = light direction
+        float3 L = normalize(lightDir[i].xyz);
+        /*if(lightType[i][0] == 2)//Spotlight
+        {
+            //D = unit vector from light source to vertex
+            float3 D = normalize(Output.vPosition.xyz - lightPos[i].xyz);
+            float cosPhi = cos(phi[i][0]);
+            float cosTheta = cos(theta[i][0]);
+            float cosAlpha = dot(L, D);
+
+            if(cosAlpha < cosPhi)
+            {
+                spotlight = 0.0f;
+            }
+            else
+            if(cosAlpha > cosTheta)
+            {
+                spotlight = 1.0f;
+            }
+            else
+            {
+                float p = 0.5f;
+                spotlight = pow(((cosAlpha - cosPhi) / (cosTheta - cosPhi)), p);
+            }
+        }*/
+
+        //Diffuse and specular
+        float3 Idiffuse = Ia[i] * Kd * dot(L, normalize(Output.vNormal));
+        float3 Idiffuse = Ia[i] * Ks * pow(dot(R, V), ns)
+        Output.vColor += att * spotlight * (Idiffuse + Ispecular);
+    }
+    
+    Output.vColor = outColor.xyz;
 
     return Output;
 }
