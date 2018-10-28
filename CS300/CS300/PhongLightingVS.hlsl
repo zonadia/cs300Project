@@ -15,6 +15,7 @@ End Header --------------------------------------------------------*/
 
 cbuffer VS_CONSTANT_BUFFER : register(b0)
 {
+    matrix worldTransMatrix;
     matrix MVPMatrix;
     matrix Rotation;
     float4 globalAmbient;
@@ -25,7 +26,9 @@ cbuffer VS_CONSTANT_BUFFER : register(b0)
     float4 phi[16]; // For spotlights
     int4 numLights; //Number of lights
     int4 lightType[16]; //Type of light 0 - dir 1 - point 2 - spotlight
+    float4 camPos;
     float4 Ka;
+    float4 Ns;
 };
 
 
@@ -51,10 +54,12 @@ VS_OUTPUT VSMain(VS_INPUT Input)
     Output.vPosition = mul(float4(Input.vPosition, 1.0f), MVPMatrix);
     Output.vNormal = mul(float4(Input.vNormal, 1.0f), Rotation);
 
+    float3 worldPos = mul(float4(Input.vPosition, 1.0f), worldTransMatrix).xyz;
     
-    float4 outColor = globalAmbient * Ka[0];
-    float Kd = 0.7f;
-    float Ks = 0.7f;
+    float3 outColor = globalAmbient.xyz * Ka[0];
+    float Kd = 1.0f;
+    float Ks = 1.0f;
+    float KaLight = 0.1f;
 
     //Loop through all the lights
     for(int i = 0;i < numLights[0]; ++i)
@@ -64,11 +69,24 @@ VS_OUTPUT VSMain(VS_INPUT Input)
         float c2 = 0.1f;
         float c3 = 0.1f;
 
-        float ns = 0.3f;
 
         //Calculate attenuation
-        float dL = distance(Output.vPosition.xyz, lightPos[i].xyz);
+        float dL = distance(worldPos, lightPos[i].xyz);
         float att = 1.0f;
+
+
+        //L = light direction
+        float3 L;
+        
+        if(lightType[i][0] == 1)//Point light
+        {
+            //Use vector from surface to light as L
+            L = normalize(lightPos[i].xyz - worldPos);
+        }
+        else//Not a point light
+        {
+            L = normalize(lightDir[i].xyz);
+        }
 
         if(lightType[i][0] != 0)//For spotlights or point lights
         {
@@ -76,15 +94,14 @@ VS_OUTPUT VSMain(VS_INPUT Input)
         }
 
         //Ambient
-        Output.vColor += Ia[i] * att;
+        outColor += Ia[i].xyz * att * KaLight;
         //Specular and diffuse
         float spotlight = 1.0f;
-        //L = light direction
-        float3 L = normalize(lightDir[i].xyz);
-        /*if(lightType[i][0] == 2)//Spotlight
+        
+        if(lightType[i][0] == 2)//Spotlight
         {
             //D = unit vector from light source to vertex
-            float3 D = normalize(Output.vPosition.xyz - lightPos[i].xyz);
+            float3 D = normalize(worldPos - lightPos[i].xyz);
             float cosPhi = cos(phi[i][0]);
             float cosTheta = cos(theta[i][0]);
             float cosAlpha = dot(L, D);
@@ -103,15 +120,24 @@ VS_OUTPUT VSMain(VS_INPUT Input)
                 float p = 0.5f;
                 spotlight = pow(((cosAlpha - cosPhi) / (cosTheta - cosPhi)), p);
             }
-        }*/
+        }
 
         //Diffuse and specular
-        float3 Idiffuse = Ia[i] * Kd * dot(L, normalize(Output.vNormal));
-        float3 Idiffuse = Ia[i] * Ks * pow(dot(R, V), ns)
-        Output.vColor += att * spotlight * (Idiffuse + Ispecular);
+        float3 Idiffuse = Ia[i].xyz * Kd * dot(L.xyz, normalize(Output.vNormal.xyz));
+
+        float3 V = normalize(camPos.xyz - worldPos);
+        float3 N = normalize(Output.vNormal.xyz);
+        float3 R = normalize((-L) - (2.0f * dot((-L), N) * N));
+
+        float3 Ispecular = Ia[i].xyz * Ks * pow(max(dot(R, V), 0.0f), Ns[0]);
+        outColor += att * spotlight * (Idiffuse + Ispecular);
     }
     
-    Output.vColor = outColor.xyz;
+    outColor.x = min(outColor.x, 1.0f);
+    outColor.y = min(outColor.y, 1.0f);
+    outColor.z = min(outColor.z, 1.0f);
+
+    Output.vColor = outColor;
 
     return Output;
 }

@@ -45,6 +45,7 @@ namespace ImGuiData
     extern float cameraZoom;
     extern float Ka;
     extern float globalAmbient[3];
+    extern float Ns;
 };
 
 Mesh::Mesh(ID3D11VertexShader *verShader, ID3D11PixelShader *pixShader, ID3D11InputLayout *iLayout)
@@ -348,6 +349,7 @@ void Mesh::drawMesh(ID3D11Device *device, ID3D11DeviceContext *context)
 
     struct VS_CONSTANT_BUFFER
     {
+        XMMATRIX worldTransMatrix;
         XMMATRIX MVPMatrix;
         XMMATRIX Rotation;
         XMFLOAT4 globalAmbient;
@@ -358,13 +360,16 @@ void Mesh::drawMesh(ID3D11Device *device, ID3D11DeviceContext *context)
         XMFLOAT4 phi[16]; // For spotlights
         XMINT4 numLights; //Number of lights
         XMINT4 lightType[16]; //Type of light 0 - dir 1 - point 2 - spotlight
+        XMFLOAT4 camPos;
         XMFLOAT4 Ka; // Object ambient intensity
+        XMFLOAT4 Ns; //Specular constant
     };
 
     //Set the MVP matrix
     XMFLOAT3 eye(0.0f, (1.3f / 3.0f) * ImGuiData::cameraZoom, ImGuiData::cameraZoom);
     XMFLOAT3 focusPosition(0.0f, 0.0f, 0.0f);
     XMFLOAT3 upVector(0.0f, 1.0f, 0.0f);
+
 
     XMMATRIX trans = XMMatrixTranspose(XMMatrixTranslation(transX, transY, transZ));
     XMMATRIX scale = XMMatrixTranspose(XMMatrixScaling(scaleX, scaleY, scaleZ));
@@ -383,21 +388,25 @@ void Mesh::drawMesh(ID3D11Device *device, ID3D11DeviceContext *context)
     ID3D11Buffer *constBuffer;
     VS_CONSTANT_BUFFER cBuf;
     cBuf.MVPMatrix = XMMatrixMultiply(projection, view);
+    cBuf.worldTransMatrix = model;
     cBuf.Rotation = rot;
     cBuf.numLights = XMINT4(ImGuiData::numLights, 0, 0, 0);
     cBuf.globalAmbient = XMFLOAT4(ImGuiData::globalAmbient[0], ImGuiData::globalAmbient[1], ImGuiData::globalAmbient[2], 1.0f);
+    cBuf.camPos = XMFLOAT4(eye.x, eye.y, eye.z, 1.0f);
     cBuf.Ka = XMFLOAT4(ImGuiData::Ka, 0.0f, 0.0f, 0.0f);
+    cBuf.Ns = XMFLOAT4(ImGuiData::Ns, 1.0f, 1.0f, 1.0f);
 
     for(int i = 0;i < 16; ++i)
     {
         //Fill in constant buffer for light information
-        cBuf.lightDir[i] = XMFLOAT4(-6.0f, 2.0f, 3.0f, 1.0f);
+        cBuf.lightDir[i] = XMFLOAT4(ImGuiData::lightDirection[i][0], ImGuiData::lightDirection[i][1], ImGuiData::lightDirection[i][2], 1.0f);
         XMVECTOR normL = XMVector3Normalize(XMLoadFloat4(&cBuf.lightDir[i]));
         XMStoreFloat4(&cBuf.lightDir[i], normL);
-        cBuf.Ia[i] = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+        cBuf.Ia[i] = XMFLOAT4(ImGuiData::lightColor[i][0], ImGuiData::lightColor[i][1], ImGuiData::lightColor[i][2], 1.0f);
         cBuf.lightPos[i] = XMFLOAT4(ImGuiData::lightPos[i][0], ImGuiData::lightPos[i][1], ImGuiData::lightPos[i][2], 1.0f);
         cBuf.theta[i] = XMFLOAT4(ImGuiData::theta[i], 0.0f, 0.0f, 0.0f);
         cBuf.phi[i] = XMFLOAT4(ImGuiData::phi[i], 0.0f, 0.0f, 0.0f);
+        cBuf.lightType[i] = XMINT4(ImGuiData::lightType[i], 1, 1, 1);
     }
 
     // Fill in a buffer description.

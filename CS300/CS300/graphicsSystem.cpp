@@ -324,6 +324,12 @@ void graphicsMainLoop(std::string modelName)
         spheres[i] = orbModel;
     }
 
+    //Load plane
+    Mesh *planeMesh = new Mesh(DXData::phongLighting.vertexShader.Get(), DXData::phongLighting.pixelShader.Get(), DXData::phongLighting.vsLayout);
+    planeMesh->loadMesh("plane_low_poly.obj", DXData::DXdevice.Get(), DXData::DXcontext.Get());
+    planeMesh->transY = -5.0f;
+    planeMesh->r = planeMesh->g = planeMesh->b = 1.0f;
+
     bool bGotMsg;
     MSG  msg;
     msg.message = WM_NULL;
@@ -357,13 +363,15 @@ void graphicsMainLoop(std::string modelName)
             DXData::DXcontext->ClearDepthStencilView(DXData::depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
             //Update Mesh
-            mainModel.rotY -= 0.0001f;
-            mainModel.rotZ += 0.00006f;
+            mainModel.rotY -= 0.0002f;
+            mainModel.rotZ += 0.00011f;
 
-            sphereTheta += 0.0001f;
+            sphereTheta += 0.00023f;
 
             //Draw mesh
             mainModel.drawMesh(DXData::DXdevice.Get(), DXData::DXcontext.Get());
+            //Draw plane
+            planeMesh->drawMesh(DXData::DXdevice.Get(), DXData::DXcontext.Get());
 
             //Draw spheres
             for(int i = 0;i < ImGuiData::numLights; ++i)
@@ -398,6 +406,8 @@ void graphicsMainLoop(std::string modelName)
     {
         delete spheres[i];
     }
+
+    delete planeMesh;
     cleanupImGui();
     cleanupDirectX();
 }

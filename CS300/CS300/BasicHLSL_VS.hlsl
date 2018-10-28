@@ -15,6 +15,7 @@ End Header --------------------------------------------------------*/
 
 cbuffer VS_CONSTANT_BUFFER : register(b0)
 {
+    matrix worldTransMatrix;
     matrix MVPMatrix;
     matrix Rotation;
     float4 globalAmbient;
@@ -25,7 +26,9 @@ cbuffer VS_CONSTANT_BUFFER : register(b0)
     float4 phi[16]; // For spotlights
     int4 numLights; //Number of lights
     int4 lightType[16]; //Type of light 0 - dir 1 - point 2 - spotlight
+    float4 camPos;
     float4 Ka;
+    float4 Ns;
 };
 
 

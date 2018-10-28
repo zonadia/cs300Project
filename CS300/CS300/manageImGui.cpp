@@ -28,16 +28,33 @@ namespace ImGuiData
     float cameraZoom = 18.0f;
     float Ka = 0.0f;
     float globalAmbient[3] = {0.6f, 0.6f, 0.6f};
+    float Ns = 16.0f;
 }
 
 void initImGuiValues()
 {
+    
     for(int i = 0;i < 16; ++i)
     {
         ImGuiData::lightColor[i][0] = 0.0f;
-        ImGuiData::lightColor[i][1] = 0.4f;
-        ImGuiData::lightColor[i][2] = 0.7f;
+        ImGuiData::lightColor[i][1] = 0.0f;
+        ImGuiData::lightColor[i][2] = 1.0f;
+        ImGuiData::lightDirection[i][0] = -1.0f;
+        ImGuiData::lightDirection[i][1] = -1.0f;
+        ImGuiData::lightDirection[i][2] = -1.0f;
+        ImGuiData::lightType[i] = 1;
     }
+    ImGuiData::numLights = 3;
+    ImGuiData::lightColor[0][0] = 1.0f;
+    ImGuiData::lightColor[0][2] = 1.0f;
+    ImGuiData::lightColor[1][1] = 1.0f;
+    ImGuiData::lightColor[1][2] = 0.0f;
+
+    ImGuiData::lightColor[3][0] = 1.0f;
+    ImGuiData::lightType[3] = 0;
+    ImGuiData::lightDirection[3][0] = -1.0f;
+    ImGuiData::lightDirection[3][1] = 0.37f;
+    ImGuiData::lightDirection[3][2] = -0.24f;
 }
 
 void initImGui(ID3D11Device *device, ID3D11DeviceContext *context)
@@ -86,7 +103,17 @@ void renderImGuiFrame()
 
         ImGui::SliderFloat("Model ambient intensity (Ka): ", &ImGuiData::Ka, 0.0f, 1.0f);
 
+        ImGui::SliderFloat("Specular constant (ns): ", &ImGuiData::Ns, 1.0f, 256.0f);
+
         ImGui::SliderInt("Number of lights: ", &ImGuiData::numLights, 1, 16, "%d");
+
+        for(int i = 0;i < 16; ++i)
+        {
+            //Dont allow light direction to be 0
+            if (ImGuiData::lightDirection[i][0] == 0.0f && ImGuiData::lightDirection[i][1] == 0.0f && ImGuiData::lightDirection[i][2] == 0.0f)
+                ImGuiData::lightDirection[i][1] = 0.1f;
+        }
+
 
         if(ImGui::CollapsingHeader("Light Settings"))
         {
@@ -110,7 +137,7 @@ void renderImGuiFrame()
                     {
                         std::string lightDirName = "Direction: ";
                         lightDirName.append(std::to_string(i));
-                        ImGui::InputFloat3(lightDirName.c_str(), ImGuiData::lightDirection[i], 3);
+                        ImGui::SliderFloat3(lightDirName.c_str(), ImGuiData::lightDirection[i], -1.0f, 1.0f);
                     }
                     //Spotlight specific light options
                     if (ImGuiData::lightType[i] == 2)
