@@ -6,9 +6,9 @@ File Name: shader.cpp
 Purpose: Create and manage shaders
 Language: Visual Studio 2017 C++
 Platform: Compiler : Visual Studio C++ 14.0
-Hardware must support DirectX 10 or 11
+Hardware must support DirectX 11
 Operating System requirement: Windows
-Project: allie.hammond_CS300_1
+Project: allie.hammond_CS300_2
 Author: Allie Hammond (allie.hammond) (180009414)
 Creation date: 10/12/2018
 End Header --------------------------------------------------------*/
@@ -33,6 +33,8 @@ namespace DXData
     shaderProgram mainShaderProgram;
     shaderProgram imGuiShaderProgram;
     shaderProgram phongLighting;
+    shaderProgram phongShading;
+    shaderProgram blinnShading;
 }
 
 HRESULT CompileShader(_In_ LPCWSTR srcFile, _In_ LPCSTR entryPoint, _In_ LPCSTR profile, _Outptr_ ID3DBlob** blob)
@@ -76,7 +78,7 @@ int loadDefaultLayoutShader(LPCWSTR vShaderName, LPCWSTR pShaderName, ID3D11Vert
 {
     // Compile vertex shader
     ID3DBlob *vsBlob = nullptr;
-    HRESULT hr = CompileShader(vShaderName, "VSMain", "vs_4_0_level_9_1", &vsBlob);
+    HRESULT hr = CompileShader(vShaderName, "VSMain", "vs_4_0", &vsBlob);
     if (FAILED(hr))
     {
         std::cout << "Failed compiling vertex shader!" << std::endl;
@@ -107,7 +109,7 @@ int loadDefaultLayoutShader(LPCWSTR vShaderName, LPCWSTR pShaderName, ID3D11Vert
 
     // Compile pixel shader
     ID3DBlob *psBlob = nullptr;
-    hr = CompileShader(pShaderName, "PSMain", "ps_4_0_level_9_1", &psBlob);
+    hr = CompileShader(pShaderName, "PSMain", "ps_4_0", &psBlob);
     if (FAILED(hr))
     {
         vsBlob->Release();
@@ -145,6 +147,12 @@ int loadShaders()
 
     //Phong lighting
     loadDefaultLayoutShader(L"PhongLightingVS.hlsl", L"BasicPixelShader.hlsl", &DXData::phongLighting.vertexShader, &DXData::phongLighting.pixelShader, &DXData::phongLighting.vsLayout);
+
+    //Phong shading
+    loadDefaultLayoutShader(L"PhongShadingVS.hlsl", L"PhongShadingPS.hlsl", &DXData::phongShading.vertexShader, &DXData::phongShading.pixelShader, &DXData::phongShading.vsLayout);
+
+    //Phong shading
+    loadDefaultLayoutShader(L"PhongShadingVS.hlsl", L"BlinnShadingPS.hlsl", &DXData::blinnShading.vertexShader, &DXData::blinnShading.pixelShader, &DXData::blinnShading.vsLayout);
 
     return 0;
 }

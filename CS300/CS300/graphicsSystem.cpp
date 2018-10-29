@@ -6,9 +6,9 @@ File Name: graphicsSystem.cpp
 Purpose: Init and run graphics main loop
 Language: Visual Studio 2017 C++
 Platform: Compiler : Visual Studio C++ 14.0
-Hardware must support DirectX 10 or 11
+Hardware must support DirectX 11
 Operating System requirement: Windows
-Project: allie.hammond_CS300_1
+Project: allie.hammond_CS300_2
 Author: Allie Hammond (allie.hammond) (180009414)
 Creation date: 10/12/2018
 End Header --------------------------------------------------------*/
@@ -37,6 +37,7 @@ namespace ImGuiData
     extern float lightPos[16][3];
     extern float theta[16];
     extern float phi[16];
+    extern int shader;
 }
 
 namespace DXData
@@ -64,6 +65,8 @@ namespace DXData
 
     extern shaderProgram mainShaderProgram;
     extern shaderProgram phongLighting;
+    extern shaderProgram phongShading;
+    extern shaderProgram blinnShading;
 }
 
 namespace WinData
@@ -310,7 +313,7 @@ void graphicsMainLoop(std::string modelName)
 
 
     //Load test model
-    Mesh mainModel(DXData::phongLighting.vertexShader.Get(), DXData::phongLighting.pixelShader.Get(), DXData::phongLighting.vsLayout);
+    Mesh mainModel(DXData::blinnShading.vertexShader.Get(), DXData::blinnShading.pixelShader.Get(), DXData::blinnShading.vsLayout);
     mainModel.loadMesh(modelName, DXData::DXdevice.Get(), DXData::DXcontext.Get());
 
     std::vector<Mesh *> spheres(16);
@@ -325,7 +328,7 @@ void graphicsMainLoop(std::string modelName)
     }
 
     //Load plane
-    Mesh *planeMesh = new Mesh(DXData::phongLighting.vertexShader.Get(), DXData::phongLighting.pixelShader.Get(), DXData::phongLighting.vsLayout);
+    Mesh *planeMesh = new Mesh(DXData::blinnShading.vertexShader.Get(), DXData::blinnShading.pixelShader.Get(), DXData::blinnShading.vsLayout);
     planeMesh->loadMesh("plane_low_poly.obj", DXData::DXdevice.Get(), DXData::DXcontext.Get());
     planeMesh->transY = -5.0f;
     planeMesh->r = planeMesh->g = planeMesh->b = 1.0f;
@@ -368,6 +371,40 @@ void graphicsMainLoop(std::string modelName)
 
             sphereTheta += 0.00023f;
 
+            //Set the active shader
+            if(ImGuiData::shader == 0)//Phong lighting
+            {
+                planeMesh->pShader = DXData::phongLighting.pixelShader.Get();
+                planeMesh->vShader = DXData::phongLighting.vertexShader.Get();
+                planeMesh->inLayout = DXData::phongLighting.vsLayout;
+
+                mainModel.pShader = DXData::phongLighting.pixelShader.Get();
+                mainModel.vShader = DXData::phongLighting.vertexShader.Get();
+                mainModel.inLayout = DXData::phongLighting.vsLayout;
+            }
+            else
+            if(ImGuiData::shader == 1)//Phong shading
+            {
+                planeMesh->pShader = DXData::phongShading.pixelShader.Get();
+                planeMesh->vShader = DXData::phongShading.vertexShader.Get();
+                planeMesh->inLayout = DXData::phongShading.vsLayout;
+
+                mainModel.pShader = DXData::phongShading.pixelShader.Get();
+                mainModel.vShader = DXData::phongShading.vertexShader.Get();
+                mainModel.inLayout = DXData::phongShading.vsLayout;
+            }
+            else
+            if(ImGuiData::shader == 2)//Blinn shading
+            {
+                planeMesh->pShader = DXData::blinnShading.pixelShader.Get();
+                planeMesh->vShader = DXData::blinnShading.vertexShader.Get();
+                planeMesh->inLayout = DXData::blinnShading.vsLayout;
+
+                mainModel.pShader = DXData::blinnShading.pixelShader.Get();
+                mainModel.vShader = DXData::blinnShading.vertexShader.Get();
+                mainModel.inLayout = DXData::blinnShading.vsLayout;
+            }
+
             //Draw mesh
             mainModel.drawMesh(DXData::DXdevice.Get(), DXData::DXcontext.Get());
             //Draw plane
@@ -377,8 +414,8 @@ void graphicsMainLoop(std::string modelName)
             for(int i = 0;i < ImGuiData::numLights; ++i)
             {
                 //Update spheres
-                spheres[i]->transX = 6.0f * sin(2 * 3.14159265 * (i / (float)ImGuiData::numLights) + sphereTheta);
-                spheres[i]->transZ = 6.0f * cos(2 * 3.14159265 * (i / (float)ImGuiData::numLights) + sphereTheta);
+                spheres[i]->transX = 6.0f * sin(2 * 3.14159265f * (i / (float)ImGuiData::numLights) + sphereTheta);
+                spheres[i]->transZ = 6.0f * cos(2 * 3.14159265f * (i / (float)ImGuiData::numLights) + sphereTheta);
 
                 //Update sphere colors
                 spheres[i]->r = ImGuiData::lightColor[i][0];

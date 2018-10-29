@@ -6,9 +6,9 @@ File Name: graphicsSystem.h
 Purpose: Init and run graphics main loop
 Language: Visual Studio 2017 C++
 Platform: Compiler : Visual Studio C++ 14.0
-Hardware must support DirectX 10 or 11
+Hardware must support DirectX 11
 Operating System requirement: Windows
-Project: allie.hammond_CS300_1
+Project: allie.hammond_CS300_2
 Author: Allie Hammond (allie.hammond) (180009414)
 Creation date: 10/12/2018
 End Header --------------------------------------------------------*/
@@ -16,6 +16,5 @@ End Header --------------------------------------------------------*/
 #pragma once
 
 void graphicsMainLoop(std::string modelName);
-void manageWindowResize(int newX, int newY);
 
 void cleanupDirectX();

@@ -2,15 +2,15 @@
 Copyright (C) 2018 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents without the prior written
 consent of DigiPen Institute of Technology is prohibited.
-File Name: BasicHLSL_PS.hlsl
-Purpose: Default Pixel Shader
+File Name: PhongShadingVS.hlsl
+Purpose: Phong shading vertex shader
 Language: Visual Studio 2017 C++
 Platform: Compiler : Visual Studio C++ 14.0
-Hardware must support DirectX 11 or 11
+Hardware must support DirectX 11
 Operating System requirement: Windows
 Project: allie.hammond_CS300_2
 Author: Allie Hammond (allie.hammond) (180009414)
-Creation date: 10/12/2018
+Creation date: 10/24/2018
 End Header --------------------------------------------------------*/
 
 cbuffer VS_CONSTANT_BUFFER : register(b0)
@@ -31,22 +31,31 @@ cbuffer VS_CONSTANT_BUFFER : register(b0)
     float4 Ns;
 };
 
-struct PS_INPUT
+
+struct VS_INPUT
+{
+    float3 vPosition : POSITION;
+    float3 vNormal : NORMAL;
+    float3 vColor : COLOR;
+};
+
+struct VS_OUTPUT
 {
     float4 vPosition : SV_POSITION;
     float4 vNormal : NORMAL;
     float3 vColor : COLOR;
+    float3 worldPos : POSITION;
 };
 
-float4 PSMain( PS_INPUT Input ) : SV_TARGET
+
+VS_OUTPUT VSMain(VS_INPUT Input)
 {
-    /*
-    float4 Ka = float4(0.05f, 0.05f, 0.05f, 1.0f);
-    float4 Id = float4(1.0f, 1.0f, 1.0f, 1.0f);
+    VS_OUTPUT Output;
 
-    float4 ambient = Ia[0] * Ka;
-    float4 diffuse = Id * float4(Input.vColor, 1.0f) * dot(Input.vNormal, lightDir[0]);
+    Output.vPosition = mul(float4(Input.vPosition, 1.0f), MVPMatrix);
+    Output.worldPos = mul(float4(Input.vPosition, 1.0f), worldTransMatrix).xyz;
+    Output.vNormal = mul(float4(Input.vNormal, 1.0f), Rotation);
+    Output.vColor = Input.vColor.xyz;
 
-    return ambient + diffuse;*/
-    return float4(Input.vColor, 1.0f);
+    return Output;
 }

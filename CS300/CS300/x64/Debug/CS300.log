@@ -1,3 +1,8 @@
-﻿  main.cpp
+﻿  shader.cpp
+  manageImGui.cpp
+  main.cpp
+  graphicsSystem.cpp
+  Mesh.cpp
+  Generating Code...
   CS300.vcxproj -> C:\Users\zeon\Projects\CS300\cs300Project\CS300\x64\Debug\CS300.exe
   CS300.vcxproj -> C:\Users\zeon\Projects\CS300\cs300Project\CS300\x64\Debug\CS300.pdb (Partial PDB)
