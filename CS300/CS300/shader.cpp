@@ -35,6 +35,7 @@ namespace DXData
     shaderProgram phongLighting;
     shaderProgram phongShading;
     shaderProgram blinnShading;
+    shaderProgram planeTexture;
 }
 
 HRESULT CompileShader(_In_ LPCWSTR srcFile, _In_ LPCSTR entryPoint, _In_ LPCSTR profile, _Outptr_ ID3DBlob** blob)
@@ -153,6 +154,9 @@ int loadShaders()
 
     //Phong shading
     loadDefaultLayoutShader(L"PhongShadingVS.hlsl", L"BlinnShadingPS.hlsl", &DXData::blinnShading.vertexShader, &DXData::blinnShading.pixelShader, &DXData::blinnShading.vsLayout);
+
+    //Plane texture test
+    loadDefaultLayoutShader(L"PlaneTextureVS.hlsl", L"PlaneTexturePS.hlsl", &DXData::planeTexture.vertexShader, &DXData::planeTexture.pixelShader, &DXData::planeTexture.vsLayout);
 
     return 0;
 }

@@ -40,4 +40,6 @@ public:
     float transX, transY, transZ;
     float rotX, rotY, rotZ;
     float r, g, b;
+    //Max/Min x and y values with a scale factor of 1
+    float xMin, xMax, yMin, yMax, zMin, zMax;
 };

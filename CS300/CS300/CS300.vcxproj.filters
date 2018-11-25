@@ -51,6 +51,9 @@
     <ClCompile Include="ImGUI\imgui_impl_win32.cpp">
       <Filter>ImGui</Filter>
     </ClCompile>
+    <ClCompile Include="Texture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="graphicsSystem.h">
@@ -89,6 +92,9 @@
     <ClInclude Include="ImGUI\imgui_impl_win32.h">
       <Filter>ImGui</Filter>
     </ClInclude>
+    <ClInclude Include="Texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="BasicHLSL_PS.hlsl">
@@ -110,6 +116,12 @@
       <Filter>Resource Files</Filter>
     </FxCompile>
     <FxCompile Include="BlinnShadingPS.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
+    <FxCompile Include="PlaneTexturePS.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
+    <FxCompile Include="PlaneTextureVS.hlsl">
       <Filter>Resource Files</Filter>
     </FxCompile>
   </ItemGroup>

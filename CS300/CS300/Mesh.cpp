@@ -109,9 +109,9 @@ void Mesh::loadMesh(std::string meshName, ID3D11Device *device, ID3D11DeviceCont
     //Process file into mesh
     
     //Store maximum and minimum x, y, z positions
-    float minX = 0.0f, maxX = 0.0f;
-    float minY = 0.0f, maxY = 0.0f;
-    float minZ = 0.0f, maxZ = 0.0f;
+    float minX = 9999999.0f, maxX = -9999999.0f;
+    float minY = 9999999.0f, maxY = -9999999.0f;
+    float minZ = 9999999.0f, maxZ = -9999999.0f;
 
     int it = 0;
     while(it < length)
@@ -207,6 +207,14 @@ void Mesh::loadMesh(std::string meshName, ID3D11Device *device, ID3D11DeviceCont
     transX = -((maxX + minX) / 2.0f) * scaleX;
     transY = -((maxY + minY) / 2.0f) * scaleY;
     transZ = -((maxZ + minZ) / 2.0f) * scaleZ;
+
+    //Set mesh size values
+    xMin = minX;
+    xMax = maxX;
+    yMin = minY;
+    yMax = maxY;
+    zMin = minZ;
+    zMax = maxZ;
 
     //Delete file buffer
     delete[] buffer;
@@ -363,6 +371,8 @@ void Mesh::drawMesh(ID3D11Device *device, ID3D11DeviceContext *context)
         XMFLOAT4 camPos;
         XMFLOAT4 Ka; // Object ambient intensity
         XMFLOAT4 Ns; //Specular constant
+        XMFLOAT4 meshSize;
+        XMFLOAT4 meshSizeZ;
     };
 
     //Set the MVP matrix
@@ -395,6 +405,8 @@ void Mesh::drawMesh(ID3D11Device *device, ID3D11DeviceContext *context)
     cBuf.camPos = XMFLOAT4(eye.x, eye.y, eye.z, 1.0f);
     cBuf.Ka = XMFLOAT4(ImGuiData::Ka, 0.0f, 0.0f, 0.0f);
     cBuf.Ns = XMFLOAT4(ImGuiData::Ns, 1.0f, 1.0f, 1.0f);
+    cBuf.meshSize = XMFLOAT4(xMin, xMax, yMin, yMax);
+    cBuf.meshSizeZ = XMFLOAT4(zMin, zMax, 0.0f, 0.0f);
 
     for(int i = 0;i < 16; ++i)
     {

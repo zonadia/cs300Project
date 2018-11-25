@@ -24,6 +24,8 @@ End Header --------------------------------------------------------*/
 #include "manageImGui.h"
 #include "shader.h"
 #include "Mesh.h"
+#include "DirectXTex.h"
+#include "Texture.h"
 
 #pragma comment(lib,"d3d11.lib")
 
@@ -67,6 +69,7 @@ namespace DXData
     extern shaderProgram phongLighting;
     extern shaderProgram phongShading;
     extern shaderProgram blinnShading;
+    extern shaderProgram planeTexture;
 }
 
 namespace WinData
@@ -148,7 +151,7 @@ void initDirectX()
 
     // This flag adds support for surfaces with a color-channel ordering different
     // from the API default. It is required for compatibility with Direct2D.
-    UINT deviceFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
+    UINT deviceFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT | D3D11_CREATE_DEVICE_DEBUG;
 
 
     // Create the Direct3D 11 API device object and a corresponding context.
@@ -311,6 +314,8 @@ void graphicsMainLoop(std::string modelName)
     initDirectX();
     initImGui(DXData::DXdevice.Get(), DXData::DXcontext.Get());
 
+    //Load textures for skybox
+    Texture skyboxFront("textures/badomen_ft.tga");
 
     //Load test model
     Mesh mainModel(DXData::blinnShading.vertexShader.Get(), DXData::blinnShading.pixelShader.Get(), DXData::blinnShading.vsLayout);
@@ -332,6 +337,8 @@ void graphicsMainLoop(std::string modelName)
     planeMesh->loadMesh("plane_low_poly.obj", DXData::DXdevice.Get(), DXData::DXcontext.Get());
     planeMesh->transY = -5.0f;
     planeMesh->r = planeMesh->g = planeMesh->b = 1.0f;
+    planeMesh->scaleX = 0.5f;
+    planeMesh->scaleZ = 0.5f;
 
     bool bGotMsg;
     MSG  msg;
@@ -339,6 +346,27 @@ void graphicsMainLoop(std::string modelName)
     PeekMessage(&msg, NULL, 0U, 0U, PM_NOREMOVE);
 
     float sphereTheta = 0.0f;
+
+    //Create sampler state
+    D3D11_SAMPLER_DESC samplerDesc;
+    ID3D11SamplerState *samplerState;
+    samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+    samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+    samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+    samplerDesc.MinLOD = -FLT_MAX;
+    samplerDesc.MaxLOD = FLT_MAX;
+    samplerDesc.MipLODBias = 0.0f;
+    samplerDesc.MaxAnisotropy = 1;
+    samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+
+
+    HRESULT hr = DXData::DXdevice->CreateSamplerState(&samplerDesc, &samplerState);
+    if(FAILED(hr))
+    {
+        std::cout << "Failed to create sampler state!\n";
+        return;
+    }
 
     while (WM_QUIT != msg.message)
     {
@@ -374,10 +402,11 @@ void graphicsMainLoop(std::string modelName)
             //Set the active shader
             if(ImGuiData::shader == 0)//Phong lighting
             {
+                /*
                 planeMesh->pShader = DXData::phongLighting.pixelShader.Get();
                 planeMesh->vShader = DXData::phongLighting.vertexShader.Get();
                 planeMesh->inLayout = DXData::phongLighting.vsLayout;
-
+                */
                 mainModel.pShader = DXData::phongLighting.pixelShader.Get();
                 mainModel.vShader = DXData::phongLighting.vertexShader.Get();
                 mainModel.inLayout = DXData::phongLighting.vsLayout;
@@ -385,9 +414,11 @@ void graphicsMainLoop(std::string modelName)
             else
             if(ImGuiData::shader == 1)//Phong shading
             {
+                /*
                 planeMesh->pShader = DXData::phongShading.pixelShader.Get();
                 planeMesh->vShader = DXData::phongShading.vertexShader.Get();
                 planeMesh->inLayout = DXData::phongShading.vsLayout;
+                */
 
                 mainModel.pShader = DXData::phongShading.pixelShader.Get();
                 mainModel.vShader = DXData::phongShading.vertexShader.Get();
@@ -396,9 +427,11 @@ void graphicsMainLoop(std::string modelName)
             else
             if(ImGuiData::shader == 2)//Blinn shading
             {
+                /*
                 planeMesh->pShader = DXData::blinnShading.pixelShader.Get();
                 planeMesh->vShader = DXData::blinnShading.vertexShader.Get();
                 planeMesh->inLayout = DXData::blinnShading.vsLayout;
+                */
 
                 mainModel.pShader = DXData::blinnShading.pixelShader.Get();
                 mainModel.vShader = DXData::blinnShading.vertexShader.Get();
@@ -408,7 +441,18 @@ void graphicsMainLoop(std::string modelName)
             //Draw mesh
             mainModel.drawMesh(DXData::DXdevice.Get(), DXData::DXcontext.Get());
             //Draw plane
+
+            //Set plane shader to be texture shader
+            planeMesh->pShader = DXData::planeTexture.pixelShader.Get();
+            planeMesh->vShader = DXData::planeTexture.vertexShader.Get();
+            planeMesh->inLayout = DXData::planeTexture.vsLayout;
+
+            //Set sampler and texture
+            DXData::DXcontext->PSSetSamplers(0, 1, &samplerState);
+            DXData::DXcontext->PSSetShaderResources(0, 1, &skyboxFront.shaderResourceView);
+
             planeMesh->drawMesh(DXData::DXdevice.Get(), DXData::DXcontext.Get());
+            //planeMesh->drawMesh(DXData::DXdevice.Get(), DXData::DXcontext.Get());
 
             //Draw spheres
             for(int i = 0;i < ImGuiData::numLights; ++i)

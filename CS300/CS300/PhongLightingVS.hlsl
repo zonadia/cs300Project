@@ -29,6 +29,8 @@ cbuffer VS_CONSTANT_BUFFER : register(b0)
     float4 camPos;
     float4 Ka;
     float4 Ns;
+    float4 meshSize; //xMin, xMax, yMin, yMax
+    float4 meshSizeZ; //zMin, zMax
 };
 
 
